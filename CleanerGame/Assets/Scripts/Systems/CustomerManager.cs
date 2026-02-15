@@ -12,6 +12,11 @@ public class CustomerManager : MonoBehaviour
     private readonly System.Collections.Generic.List<Customer> activeCustomers = new System.Collections.Generic.List<Customer>();
     private Chair[] chairs;
 
+    public int ActiveCustomerCount
+    {
+        get { return activeCustomers.Count; }
+    }
+
     void Start()
     {
         chairs = FindObjectsOfType<Chair>();
