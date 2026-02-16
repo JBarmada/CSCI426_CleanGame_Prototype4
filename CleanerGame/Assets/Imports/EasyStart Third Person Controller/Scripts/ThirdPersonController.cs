@@ -20,36 +20,69 @@ public class ThirdPersonController : MonoBehaviour
     public float velocity = 5f;
     [Tooltip("This value is added to the speed value while the character is sprinting.")]
     public float sprintAdittion = 3.5f;
-    [Tooltip("The higher the value, the higher the character will jump.")]
-    public float jumpForce = 18f;
-    [Tooltip("Stay in the air. The higher the value, the longer the character floats before falling.")]
-    public float jumpTime = 0.85f;
     [Space]
     [Tooltip("Force that pulls the player down. Changing this value causes all movement, jumping and falling to be changed as well.")]
     public float gravity = 9.8f;
 
-    float jumpElapsedTime = 0;
-
     // Player states
-    bool isJumping = false;
     bool isSprinting = false;
     bool isCrouching = false;
 
     // Inputs
     float inputHorizontal;
     float inputVertical;
-    bool inputJump;
     bool inputCrouch;
     bool inputSprint;
 
     Animator animator;
     CharacterController cc;
 
+    [Header("Broom Sweep")]
+    public Transform broom;
+    public Vector3 broomSweepLocalOffset = new Vector3(0f, 0f, 0.6f);
+    public Vector3 broomSweepLocalEuler = Vector3.zero;
+    public Vector3 broomSweepAxis = Vector3.up;
+    public float broomMoveSpeed = 10f;
+    public float broomSweepAngle = 30f;
+    public float broomSweepSpeed = 6f;
+    public AudioSource broomSweepAudioSource;
+    public AudioClip broomSweepClip;
+    [Range(0f, 1f)]
+    public float broomSweepVolume = 1f;
+    public GameObject broomSweepParticlePrefab;
+    public GameObject broomSweepLightPrefab;
+    public Vector3 broomTipLocalOffset = new Vector3(0f, 0f, 0.6f);
+    public float broomSweepBurstInterval = 1f;
+    public float broomSweepBurstLifetime = 1.2f;
+
+    bool isSweeping = false;
+    bool wasSweeping = false;
+    float broomSweepBurstTimer = 0f;
+    Vector3 broomDefaultLocalPos;
+    Quaternion broomDefaultLocalRot;
+
 
     void Start()
     {
         cc = GetComponent<CharacterController>();
         animator = GetComponent<Animator>();
+
+        if (broom != null)
+        {
+            broomDefaultLocalPos = broom.localPosition;
+            broomDefaultLocalRot = broom.localRotation;
+        }
+
+        if (broomSweepAudioSource == null)
+            broomSweepAudioSource = GetComponent<AudioSource>();
+
+        if (broomSweepAudioSource != null && broomSweepClip != null)
+        {
+            broomSweepAudioSource.clip = broomSweepClip;
+            broomSweepAudioSource.loop = true;
+            broomSweepAudioSource.playOnAwake = false;
+            broomSweepAudioSource.volume = broomSweepVolume;
+        }
 
         // Message informing the user that they forgot to add an animator
         if (animator == null)
@@ -64,10 +97,10 @@ public class ThirdPersonController : MonoBehaviour
         // Input checkers
         inputHorizontal = Input.GetAxis("Horizontal");
         inputVertical = Input.GetAxis("Vertical");
-        inputJump = Input.GetAxis("Jump") == 1f;
         inputSprint = Input.GetAxis("Fire3") == 1f;
         // Unfortunately GetAxis does not work with GetKeyDown, so inputs must be taken individually
         inputCrouch = Input.GetKeyDown(KeyCode.LeftControl) || Input.GetKeyDown(KeyCode.JoystickButton1);
+        isSweeping = Input.GetKey(KeyCode.Space);
 
         // Check if you pressed the crouch input key and change the player's state
         if ( inputCrouch )
@@ -92,20 +125,79 @@ public class ThirdPersonController : MonoBehaviour
 
         }
 
-        // Jump animation
-        if( animator != null )
-            animator.SetBool("air", cc.isGrounded == false );
+        UpdateSweepAudio();
+        UpdateSweepEffects();
 
-        // Handle can jump or not
-        if ( inputJump && cc.isGrounded )
+    }
+
+    void UpdateSweepAudio()
+    {
+        if (broomSweepAudioSource == null || broomSweepClip == null)
         {
-            isJumping = true;
-            // Disable crounching when jumping
-            //isCrouching = false; 
+            wasSweeping = isSweeping;
+            return;
         }
 
-        HeadHittingDetect();
+        if (isSweeping && !wasSweeping)
+            broomSweepAudioSource.Play();
+        else if (!isSweeping && wasSweeping)
+            broomSweepAudioSource.Stop();
 
+        if (isSweeping)
+            broomSweepAudioSource.volume = broomSweepVolume;
+
+        wasSweeping = isSweeping;
+    }
+
+    void UpdateSweepEffects()
+    {
+        if (broom == null)
+            return;
+
+        if (!isSweeping)
+        {
+            broomSweepBurstTimer = 0f;
+            return;
+        }
+
+        broomSweepBurstTimer += Time.deltaTime;
+        if (broomSweepBurstTimer < broomSweepBurstInterval)
+            return;
+
+        broomSweepBurstTimer = 0f;
+        Vector3 spawnPos = broom.TransformPoint(broomTipLocalOffset);
+        Quaternion spawnRot = broom.rotation;
+
+        if (broomSweepParticlePrefab != null)
+        {
+            GameObject fx = Instantiate(broomSweepParticlePrefab, spawnPos, spawnRot);
+            if (broomSweepBurstLifetime > 0f)
+                Destroy(fx, broomSweepBurstLifetime);
+        }
+
+        if (broomSweepLightPrefab != null)
+        {
+            GameObject lightFx = Instantiate(broomSweepLightPrefab, spawnPos, spawnRot);
+            if (broomSweepBurstLifetime > 0f)
+                Destroy(lightFx, broomSweepBurstLifetime);
+        }
+    }
+
+    private void LateUpdate()
+    {
+        if (broom == null)
+            return;
+
+        Vector3 targetPos = isSweeping ? broomSweepLocalOffset : broomDefaultLocalPos;
+        broom.localPosition = Vector3.Lerp(broom.localPosition, targetPos, Time.deltaTime * broomMoveSpeed);
+
+        Vector3 sweepAxis = broomSweepAxis.sqrMagnitude > 0.0001f ? broomSweepAxis.normalized : Vector3.up;
+        Quaternion baseRot = isSweeping ? Quaternion.Euler(broomSweepLocalEuler) : broomDefaultLocalRot;
+        Quaternion sweepRot = isSweeping
+            ? Quaternion.AngleAxis(Mathf.Sin(Time.time * broomSweepSpeed) * broomSweepAngle, sweepAxis)
+            : Quaternion.identity;
+        Quaternion targetRot = baseRot * sweepRot;
+        broom.localRotation = Quaternion.Slerp(broom.localRotation, targetRot, Time.deltaTime * broomMoveSpeed);
     }
 
 
@@ -124,23 +216,6 @@ public class ThirdPersonController : MonoBehaviour
         float directionX = inputHorizontal * (velocity + velocityAdittion) * Time.deltaTime;
         float directionZ = inputVertical * (velocity + velocityAdittion) * Time.deltaTime;
         float directionY = 0;
-
-        // Jump handler
-        if ( isJumping )
-        {
-
-            // Apply inertia and smoothness when climbing the jump
-            // It is not necessary when descending, as gravity itself will gradually pulls
-            directionY = Mathf.SmoothStep(jumpForce, jumpForce * 0.30f, jumpElapsedTime / jumpTime) * Time.deltaTime;
-
-            // Jump timer
-            jumpElapsedTime += Time.deltaTime;
-            if (jumpElapsedTime >= jumpTime)
-            {
-                isJumping = false;
-                jumpElapsedTime = 0;
-            }
-        }
 
         // Add gravity to Y axis
         directionY = directionY - gravity * Time.deltaTime;
@@ -179,22 +254,5 @@ public class ThirdPersonController : MonoBehaviour
 
     }
 
-
-    //This function makes the character end his jump if he hits his head on something
-    void HeadHittingDetect()
-    {
-        float headHitDistance = 1.1f;
-        Vector3 ccCenter = transform.TransformPoint(cc.center);
-        float hitCalc = cc.height / 2f * headHitDistance;
-
-        // Uncomment this line to see the Ray drawed in your characters head
-        // Debug.DrawRay(ccCenter, Vector3.up * headHeight, Color.red);
-
-        if (Physics.Raycast(ccCenter, Vector3.up, hitCalc))
-        {
-            jumpElapsedTime = 0;
-            isJumping = false;
-        }
-    }
 
 }
