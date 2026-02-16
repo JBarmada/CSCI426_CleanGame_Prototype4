@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class CustomerManager : MonoBehaviour
@@ -9,17 +11,18 @@ public class CustomerManager : MonoBehaviour
     [SerializeField] private float spawnIntervalSeconds = 6f;
     [SerializeField] private int maxActiveCustomers = 2;
 
-    private readonly System.Collections.Generic.List<Customer> activeCustomers = new System.Collections.Generic.List<Customer>();
+    private readonly List<Customer> activeCustomers = new List<Customer>();
     private Chair[] chairs;
 
-    public int ActiveCustomerCount
-    {
-        get { return activeCustomers.Count; }
-    }
+    // ✅ Use this for your spill spawner
+    public int CustomerCount => activeCustomers.Count;
 
-    void Start()
+    public int ActiveCustomerCount => activeCustomers.Count;
+
+    private void Start()
     {
-        chairs = FindObjectsOfType<Chair>();
+        // ✅ Unity 6 replacement for FindObjectsOfType
+        chairs = FindObjectsByType<Chair>(FindObjectsSortMode.None);
         StartCoroutine(SpawnLoop());
     }
 
@@ -30,10 +33,10 @@ public class CustomerManager : MonoBehaviour
 
         foreach (Chair chair in chairs)
         {
+            if (chair == null) continue;
             if (chair.IsOccupied || chair.IsReserved) continue;
 
             float distance = Vector3.Distance(position, chair.transform.position);
-
             if (distance < minDistance)
             {
                 minDistance = distance;
@@ -61,7 +64,7 @@ public class CustomerManager : MonoBehaviour
         Destroy(customer.gameObject);
     }
 
-    private System.Collections.IEnumerator SpawnLoop()
+    private IEnumerator SpawnLoop()
     {
         var wait = new WaitForSeconds(spawnIntervalSeconds);
         while (true)
@@ -89,4 +92,3 @@ public class CustomerManager : MonoBehaviour
         activeCustomers.Add(customer);
     }
 }
-

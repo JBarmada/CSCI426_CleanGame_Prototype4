@@ -7,17 +7,27 @@ public class RestaurantManager : MonoBehaviour
     public int Dirtiness { get; private set; }
     public int Popularity { get; private set; }
 
-    void Awake()
+    private void Awake()
     {
-        Instance = this;
+        if (Instance == null)
+            Instance = this;
+        else
+            Destroy(gameObject);
     }
 
     public void AddDirt(int amount)
     {
         Dirtiness += amount;
+        Dirtiness = Mathf.Max(Dirtiness, 0);
 
         if (Dirtiness > 50)
             DecreasePopularity();
+    }
+
+    public void CleanDirt(int amount)
+    {
+        Dirtiness -= amount;
+        Dirtiness = Mathf.Max(Dirtiness, 0);
     }
 
     void DecreasePopularity()
