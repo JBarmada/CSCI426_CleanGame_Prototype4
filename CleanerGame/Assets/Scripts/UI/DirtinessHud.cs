@@ -10,11 +10,13 @@ public class DirtinessHud : MonoBehaviour
     [Header("Text")]
     [SerializeField] private string cleanText = "Clean";
     [SerializeField] private string dirtyText = "Dirty";
+    [SerializeField] private string veryDirtyText = "Very Dirty";
     [SerializeField] private string filthyText = "Filthy";
 
     [Header("Colors")]
     [SerializeField] private Color cleanColor = new Color(0.2f, 0.8f, 0.2f);
     [SerializeField] private Color dirtyColor = new Color(0.45f, 0.25f, 0.1f);
+    [SerializeField] private Color veryDirtyColor = new Color(0.7f, 0.25f, 0.1f);
     [SerializeField] private Color filthyColor = new Color(0.9f, 0.1f, 0.1f);
 
     [Header("Refresh")]
@@ -62,6 +64,10 @@ public class DirtinessHud : MonoBehaviour
             case RestaurantManager.DirtinessLevel.Dirty:
                 statusText.text = dirtyText;
                 statusText.color = dirtyColor;
+                break;
+            case RestaurantManager.DirtinessLevel.VeryDirty:
+                statusText.text = veryDirtyText;
+                statusText.color = veryDirtyColor;
                 break;
             default:
                 statusText.text = filthyText;

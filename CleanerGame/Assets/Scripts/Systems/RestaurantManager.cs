@@ -8,6 +8,7 @@ public class RestaurantManager : MonoBehaviour
     {
         Clean,
         Dirty,
+        VeryDirty,
         Filthy
     }
 
@@ -22,6 +23,7 @@ public class RestaurantManager : MonoBehaviour
     [SerializeField] private int cleanMaxCustomers = 12;
     [SerializeField] private int someDirtinessMinSpills = 1;
     [SerializeField] private int mediumDirtinessMinSpills = 4;
+    [SerializeField] private int veryDirtyMinSpills = 6;
     [SerializeField] private int tooMuchDirtinessMinSpills = 7;
     [SerializeField] private int tooMuchDirtinessSpan = 5;
     [SerializeField] private Vector2Int someDirtinessCustomers = new Vector2Int(8, 10);
@@ -30,6 +32,9 @@ public class RestaurantManager : MonoBehaviour
 
     private float dirtinessTimer;
     private int cachedMaxCustomers;
+    private DirtinessLevel currentDirtinessLevel;
+    private float veryDirtySeconds;
+    private float filthySeconds;
 
     private void Awake()
     {
@@ -43,7 +48,10 @@ public class RestaurantManager : MonoBehaviour
 
     private void Update()
     {
-        dirtinessTimer += Time.deltaTime;
+        float deltaTime = Time.deltaTime;
+        AccumulateDirtinessTime(deltaTime);
+
+        dirtinessTimer += deltaTime;
         if (dirtinessTimer < dirtinessRefreshSeconds) return;
 
         dirtinessTimer = 0f;
@@ -77,9 +85,17 @@ public class RestaurantManager : MonoBehaviour
 
     public DirtinessLevel GetDirtinessLevel()
     {
-        if (Dirtiness <= 0) return DirtinessLevel.Clean;
-        if (Dirtiness < tooMuchDirtinessMinSpills) return DirtinessLevel.Dirty;
-        return DirtinessLevel.Filthy;
+        return currentDirtinessLevel;
+    }
+
+    public float GetVeryDirtySeconds()
+    {
+        return veryDirtySeconds;
+    }
+
+    public float GetFilthySeconds()
+    {
+        return filthySeconds;
     }
 
     private void RefreshDirtiness()
@@ -87,6 +103,28 @@ public class RestaurantManager : MonoBehaviour
         Dirtiness = FindObjectsByType<SpillManager>(FindObjectsSortMode.None).Length;
         Dirtiness = Mathf.Max(Dirtiness, 0);
         cachedMaxCustomers = CalculateMaxCustomers(Dirtiness);
+        currentDirtinessLevel = CalculateDirtinessLevel(Dirtiness);
+    }
+
+    private DirtinessLevel CalculateDirtinessLevel(int dirtiness)
+    {
+        if (dirtiness <= 0) return DirtinessLevel.Clean;
+
+        int veryDirtyMin = Mathf.Clamp(veryDirtyMinSpills, 1, Mathf.Max(1, tooMuchDirtinessMinSpills));
+        if (dirtiness < veryDirtyMin) return DirtinessLevel.Dirty;
+        if (dirtiness < tooMuchDirtinessMinSpills) return DirtinessLevel.VeryDirty;
+
+        return DirtinessLevel.Filthy;
+    }
+
+    private void AccumulateDirtinessTime(float deltaTime)
+    {
+        if (deltaTime <= 0f) return;
+
+        if (currentDirtinessLevel == DirtinessLevel.VeryDirty)
+            veryDirtySeconds += deltaTime;
+        else if (currentDirtinessLevel == DirtinessLevel.Filthy)
+            filthySeconds += deltaTime;
     }
 
     private int CalculateMaxCustomers(int dirtiness)
