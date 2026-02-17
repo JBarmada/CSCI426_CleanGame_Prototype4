@@ -7,6 +7,8 @@ public class GameFlowManager : MonoBehaviour
 
     public bool IsPaused => isPaused;
 
+    [SerializeField] private bool startPaused = true;
+
     private bool isPaused;
 
     private void Awake()
@@ -18,6 +20,21 @@ public class GameFlowManager : MonoBehaviour
         }
 
         Instance = this;
+
+        if (startPaused)
+        {
+            isPaused = true;
+            Time.timeScale = 0f;
+        }
+    }
+
+    private void LateUpdate()
+    {
+        if (isPaused && Time.timeScale != 0f)
+        {
+            Debug.Log("[GameFlow] Re-pausing: Time.timeScale was changed externally.");
+            Time.timeScale = 0f;
+        }
     }
 
     public void PauseGame()

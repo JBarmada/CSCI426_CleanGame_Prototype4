@@ -23,6 +23,11 @@ public class StartMenuUI : MonoBehaviour
             startButton.onClick.AddListener(OnStartPressed);
         if (quitButton != null)
             quitButton.onClick.AddListener(OnQuitPressed);
+
+        if (gameFlow != null)
+            gameFlow.PauseGame();
+        else
+            Time.timeScale = 0f;
     }
 
     private void OnEnable()

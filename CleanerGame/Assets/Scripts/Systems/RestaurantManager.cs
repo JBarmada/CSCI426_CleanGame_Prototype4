@@ -23,6 +23,7 @@ public class RestaurantManager : MonoBehaviour
     [SerializeField] private float dirtinessRefreshIntervalSeconds = 1f;
     [FormerlySerializedAs("dayCycle")]
     [SerializeField] private RestaurantDayCycle dayCycleSystem;
+    [SerializeField] private CustomerSpawnTuning spawnTuning;
     [FormerlySerializedAs("filthyLimit")]
     [SerializeField] private int filthyStrikeLimit = 3;
     [FormerlySerializedAs("useBossCutscene")]

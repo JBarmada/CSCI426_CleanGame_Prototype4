@@ -32,9 +32,17 @@ public class BossFilthReaction : MonoBehaviour
     [SerializeField] private float turnDegrees = 180f;
     [SerializeField] private float turnSeconds = 0.2f;
 
+    [Header("Debug")]
+    [SerializeField] private bool debugRepeatYell = false;
+    [SerializeField] private float debugRepeatSeconds = 5f;
+
     private Transform currentTarget;
+    private Vector3 patrolPosA;
+    private Vector3 patrolPosB;
+    private bool hasPatrolPositions;
     private bool isCutscene;
     private Coroutine cutsceneRoutine;
+    private Coroutine debugRoutine;
     private Camera mainCam;
     private float previousTimeScale = 1f;
 
@@ -53,18 +61,31 @@ public class BossFilthReaction : MonoBehaviour
     {
         if (restaurantManager != null)
             restaurantManager.FilthyStrikeTriggered += HandleFilthyStrikeTriggered;
+
+        if (debugRepeatYell)
+            StartDebugLoop();
     }
 
     private void OnDisable()
     {
         if (restaurantManager != null)
             restaurantManager.FilthyStrikeTriggered -= HandleFilthyStrikeTriggered;
+
+        StopDebugLoop();
     }
 
     private void Start()
     {
         if (pointA != null && pointB != null)
+        {
+            patrolPosA = pointA.position;
+            patrolPosB = pointB.position;
+            hasPatrolPositions = true;
             currentTarget = pointB;
+
+            if (pointA.IsChildOf(transform) || pointB.IsChildOf(transform))
+                Debug.LogWarning("[Boss] Patrol points are parented to the boss. Use world-space points for stable movement.");
+        }
     }
 
     private void Update()
@@ -73,14 +94,39 @@ public class BossFilthReaction : MonoBehaviour
         Patrol();
     }
 
+    private void StartDebugLoop()
+    {
+        if (debugRoutine != null)
+            StopCoroutine(debugRoutine);
+
+        debugRoutine = StartCoroutine(DebugYellLoop());
+    }
+
+    private void StopDebugLoop()
+    {
+        if (debugRoutine == null) return;
+        StopCoroutine(debugRoutine);
+        debugRoutine = null;
+    }
+
+    private IEnumerator DebugYellLoop()
+    {
+        while (debugRepeatYell)
+        {
+            HandleFilthyStrikeTriggered();
+            float wait = Mathf.Max(0.1f, debugRepeatSeconds);
+            yield return new WaitForSecondsRealtime(wait);
+        }
+    }
+
     private void Patrol()
     {
-        if (pointA == null || pointB == null) return;
-        if (currentTarget == null) currentTarget = pointB;
+        if (!hasPatrolPositions) return;
 
-        transform.position = Vector3.MoveTowards(transform.position, currentTarget.position, moveSpeed * Time.deltaTime);
+        Vector3 targetPos = currentTarget == pointA ? patrolPosA : patrolPosB;
+        transform.position = Vector3.MoveTowards(transform.position, targetPos, moveSpeed * Time.deltaTime);
 
-        Vector3 toTarget = currentTarget.position - transform.position;
+        Vector3 toTarget = targetPos - transform.position;
         toTarget.y = 0f;
         if (toTarget.sqrMagnitude > 0.001f)
         {
@@ -88,7 +134,7 @@ public class BossFilthReaction : MonoBehaviour
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, turnSpeed * Time.deltaTime);
         }
 
-        if (Vector3.Distance(transform.position, currentTarget.position) <= 0.05f)
+        if (Vector3.Distance(transform.position, targetPos) <= 0.05f)
             currentTarget = currentTarget == pointA ? pointB : pointA;
     }
 
