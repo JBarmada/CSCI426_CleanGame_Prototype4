@@ -9,6 +9,9 @@ public class CustomerPartyAI : MonoBehaviour
     [Header("Shuffle Timing")]
     [SerializeField] private Vector2 shuffleSecondsRange = new Vector2(3f, 8f);
 
+    [Header("Setup")]
+    [SerializeField] private bool disableCustomerComponent = true;
+
     private CustomerManager manager;
     private Chair assignedChair;
     private Chair reservedChair;
@@ -33,10 +36,19 @@ public class CustomerPartyAI : MonoBehaviour
     private void Awake()
     {
         customerProxy = GetComponent<Customer>();
-        if (customerProxy != null)
+        if (customerProxy != null && disableCustomerComponent)
             customerProxy.enabled = false;
 
+        EnableRenderers();
+
         chairs = FindObjectsByType<Chair>(FindObjectsSortMode.None);
+    }
+
+    private void EnableRenderers()
+    {
+        var renderers = GetComponentsInChildren<Renderer>(true);
+        for (int i = 0; i < renderers.Length; i++)
+            renderers[i].enabled = true;
     }
 
     private void Start()

@@ -126,6 +126,7 @@ public class CustomerManager : MonoBehaviour
         if (isPartyDay && partyCustomerPrefab != null)
         {
             CustomerPartyAI partyCustomer = Instantiate(partyCustomerPrefab, spawnPoint.position, spawnPoint.rotation);
+            partyCustomer.gameObject.SetActive(true);
             partyCustomer.Initialize(this);
             partyCustomers.Add(partyCustomer);
             activeCustomerCount++;
