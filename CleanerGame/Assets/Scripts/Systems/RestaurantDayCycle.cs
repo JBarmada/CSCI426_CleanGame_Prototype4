@@ -34,7 +34,13 @@ public class RestaurantDayCycle : MonoBehaviour
     private DayPhase currentPhase;
     private bool gameOver;
 
+    // =========================
+    // ✅ NEW: Public API
+    // =========================
+    public int DayCount => dayCount;
+
     public event Action<DayPhase> PhaseChanged;
+    public event Action<int> DayStarted;   // fires at start of each restaurant day
 
     private void Awake()
     {
@@ -62,23 +68,21 @@ public class RestaurantDayCycle : MonoBehaviour
         }
     }
 
-    public bool IsClosed
-    {
-        get { return currentPhase == DayPhase.Closing || gameOver; }
-    }
+    public bool IsClosed => currentPhase == DayPhase.Closing || gameOver;
 
-    public DayPhase GetPhase()
-    {
-        return currentPhase;
-    }
+    public DayPhase GetPhase() => currentPhase;
+
+    // =========================
+    // Day lifecycle
+    // =========================
 
     private void InitializeDay()
     {
         dayTimer = 0f;
         dayCount = 1;
-        currentPhase = DayPhase.Morning;
-        AnnouncePhase(currentPhase);
-        PhaseChanged?.Invoke(currentPhase);
+        SetPhase(DayPhase.Morning);
+
+        DayStarted?.Invoke(dayCount);   // ✅ fire day 1
     }
 
     private void UpdateDayCycle(float deltaTime)
@@ -86,6 +90,7 @@ public class RestaurantDayCycle : MonoBehaviour
         if (gameOver) return;
 
         dayTimer += deltaTime;
+
         DayPhase phase = GetPhaseForTime(dayTimer);
         if (phase != currentPhase)
             SetPhase(phase);
@@ -104,6 +109,7 @@ public class RestaurantDayCycle : MonoBehaviour
             }
 
             SetPhase(DayPhase.Morning);
+            DayStarted?.Invoke(dayCount);   // ✅ fire new restaurant day
         }
     }
 
@@ -117,13 +123,21 @@ public class RestaurantDayCycle : MonoBehaviour
     private DayPhase GetPhaseForTime(float time)
     {
         float t = Mathf.Repeat(time, dayLengthSeconds);
+
         if (t < morningSeconds) return DayPhase.Morning;
         t -= morningSeconds;
+
         if (t < rushSeconds) return DayPhase.RushHour;
         t -= rushSeconds;
+
         if (t < afternoonSeconds) return DayPhase.AfternoonSlowdown;
+
         return DayPhase.Closing;
     }
+
+    // =========================
+    // Audio / feedback
+    // =========================
 
     private void AnnouncePhase(DayPhase phase)
     {
@@ -162,13 +176,20 @@ public class RestaurantDayCycle : MonoBehaviour
         jingleSource.PlayOneShot(clip, jingleVolume);
     }
 
+    // =========================
+    // Utilities
+    // =========================
+
     private void NormalizeDaySegments()
     {
         if (dayLengthSeconds <= 0f)
             dayLengthSeconds = 60f;
 
-        float total = Mathf.Max(0f, morningSeconds) + Mathf.Max(0f, rushSeconds)
-            + Mathf.Max(0f, afternoonSeconds) + Mathf.Max(0f, closingSeconds);
+        float total =
+            Mathf.Max(0f, morningSeconds) +
+            Mathf.Max(0f, rushSeconds) +
+            Mathf.Max(0f, afternoonSeconds) +
+            Mathf.Max(0f, closingSeconds);
 
         if (total <= 0f)
         {
