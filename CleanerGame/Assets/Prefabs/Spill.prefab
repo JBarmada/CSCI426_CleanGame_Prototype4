@@ -112,7 +112,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 4.49, y: 2.26, z: 1}
+  m_Size: {x: 7.13, y: 4.13, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &1746546210115510782
 MonoBehaviour:
@@ -126,7 +126,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 58187d894f2824ffb884d97d9063963d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SpillManager
-  cleanKey: 107
-  pressesToClean: 3
+  sweepKey: 32
+  sweepsPerSecond: 3
+  sweepsToClean: 3
+  coinsPerClean: 1
+  coinWallet: {fileID: 0}
   spriteRenderer: {fileID: 0}
   destroyRoot: 0
