@@ -679,7 +679,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 8300000, guid: eaee94f08e38e844da3f24ac620cbc2f, type: 3}
   m_PlayOnAwake: 1
-  m_Volume: 1
+  m_Volume: 0.7
   m_Pitch: 1
   Loop: 1
   Mute: 0
@@ -2455,7 +2455,7 @@ MonoBehaviour:
   startingCoins: 0
   dontDestroyOnLoad: 0
   audioSource: {fileID: 1365000190}
-  coinClip: {fileID: 0}
+  coinClip: {fileID: 8300000, guid: fd6236556ff2ad640b9e29c09a08b787, type: 3}
   coinVolume: 1
 --- !u!114 &1365000192
 MonoBehaviour:
