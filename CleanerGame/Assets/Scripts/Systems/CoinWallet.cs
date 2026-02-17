@@ -17,6 +17,7 @@ public class CoinWallet : MonoBehaviour
 
     public int Coins => coins;
 
+    // ✅ UI + systems can subscribe to this
     public event Action<int> CoinsChanged;
 
     private int coins;
@@ -59,5 +60,24 @@ public class CoinWallet : MonoBehaviour
 
         if (coinClip != null && audioSource != null)
             audioSource.PlayOneShot(coinClip, coinVolume);
+    }
+
+    // ============================
+    // ✅ NEW: spending support
+    // ============================
+
+    public bool CanAfford(int amount)
+    {
+        return amount <= 0 || coins >= amount;
+    }
+
+    public bool TrySpend(int amount)
+    {
+        if (amount <= 0) return true;
+        if (coins < amount) return false;
+
+        coins -= amount;
+        CoinsChanged?.Invoke(coins);
+        return true;
     }
 }
