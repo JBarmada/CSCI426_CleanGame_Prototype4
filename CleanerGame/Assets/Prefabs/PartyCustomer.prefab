@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 2123113104877231401}
   - component: {fileID: 5814680673081795671}
   - component: {fileID: 6323863520500074900}
+  - component: {fileID: 1102676387024030566}
   m_Layer: 0
   m_Name: PartyCustomer
   m_TagString: Customer
@@ -128,3 +129,19 @@ MonoBehaviour:
   moveSpeed: 2.2
   arrivalDistance: 0.2
   shuffleSecondsRange: {x: 3, y: 8}
+  disableCustomerComponent: 1
+--- !u!114 &1102676387024030566
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9142933654741573710}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00bd5c2e90689a2409dd86e4dbd9d641, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Customer
+  moveSpeed: 2.2
+  sitDurationSeconds: 8
+  arrivalDistance: 0.2
