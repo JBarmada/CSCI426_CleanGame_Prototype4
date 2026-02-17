@@ -11,6 +11,7 @@ public class CustomerManager : MonoBehaviour
     [SerializeField] private float spawnIntervalSeconds = 6f;
     [SerializeField] private int maxActiveCustomers = 2;
     [SerializeField] private RestaurantManager restaurantManager;
+    [SerializeField] private RestaurantDayCycle dayCycle;
     [Header("Spills")]
     [SerializeField] private SpillSpawner spillSpawner;
 
@@ -28,6 +29,8 @@ public class CustomerManager : MonoBehaviour
         chairs = FindObjectsByType<Chair>(FindObjectsSortMode.None);
         if (restaurantManager == null)
             restaurantManager = RestaurantManager.Instance;
+        if (dayCycle == null && restaurantManager != null)
+            dayCycle = restaurantManager.GetComponent<RestaurantDayCycle>();
         StartCoroutine(SpawnLoop());
     }
 
@@ -82,11 +85,15 @@ public class CustomerManager : MonoBehaviour
     private void TrySpawnCustomer()
     {
         if (customerPrefab == null || spawnPoints == null || spawnPoints.Length == 0) return;
+        if (dayCycle != null && dayCycle.IsClosed) return;
+
         int dirtinessCap = restaurantManager == null
             ? maxActiveCustomers
             : restaurantManager.GetMaxCustomersForDirtiness();
 
-        int cap = Mathf.Min(maxActiveCustomers, dirtinessCap);
+        int baseCap = Mathf.Min(maxActiveCustomers, dirtinessCap);
+        float dayMultiplier = dayCycle == null ? 1f : dayCycle.GetSpawnMultiplier();
+        int cap = Mathf.Max(0, Mathf.FloorToInt(baseCap * dayMultiplier));
         if (activeCustomers.Count >= cap) return;
 
         Transform spawnPoint = spawnPoints[Random.Range(0, spawnPoints.Length)];

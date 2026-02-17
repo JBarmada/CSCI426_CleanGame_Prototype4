@@ -11,6 +11,7 @@ public class RestaurantManager : MonoBehaviour
         Filthy
     }
 
+
     public int Dirtiness { get; private set; }
     public int Popularity { get; private set; }
 
