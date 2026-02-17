@@ -293,7 +293,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7845913212085824400, guid: e79181bd674f8ef43ba74f40c91b430d, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1
+      value: -0.8
       objectReference: {fileID: 0}
     - target: {fileID: 7845913212085824400, guid: e79181bd674f8ef43ba74f40c91b430d, type: 3}
       propertyPath: m_LocalPosition.y
@@ -301,7 +301,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7845913212085824400, guid: e79181bd674f8ef43ba74f40c91b430d, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: -0.2
       objectReference: {fileID: 0}
     - target: {fileID: 7845913212085824400, guid: e79181bd674f8ef43ba74f40c91b430d, type: 3}
       propertyPath: m_LocalRotation.w
@@ -3196,6 +3196,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 8300000, guid: f89c6d52a1a7e164fb62699399931e4e, type: 3}
     - target: {fileID: 3837096017004675079, guid: 203f9edddf358f44b871f6e1afea805b, type: 3}
+      propertyPath: broomSweepAxis.z
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3837096017004675079, guid: 203f9edddf358f44b871f6e1afea805b, type: 3}
       propertyPath: broomSweepVolume
       value: 0.5
       objectReference: {fileID: 0}
@@ -3203,6 +3207,14 @@ PrefabInstance:
       propertyPath: broomSweepAudioSource
       value: 
       objectReference: {fileID: 3367601844064701556}
+    - target: {fileID: 3837096017004675079, guid: 203f9edddf358f44b871f6e1afea805b, type: 3}
+      propertyPath: broomTipLocalOffset.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3837096017004675079, guid: 203f9edddf358f44b871f6e1afea805b, type: 3}
+      propertyPath: broomSweepLocalOffset.z
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3837096017004675079, guid: 203f9edddf358f44b871f6e1afea805b, type: 3}
       propertyPath: broomSweepParticlePrefab
       value: 
