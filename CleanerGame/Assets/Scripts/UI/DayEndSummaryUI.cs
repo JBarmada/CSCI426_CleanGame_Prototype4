@@ -29,8 +29,17 @@ public class DayEndSummaryUI : MonoBehaviour
 
     [Header("Promotion Rules")]
     [SerializeField] private int promotionDay = 3;
-    [SerializeField] private int coinsRequiredToPromote = 25;
-    [SerializeField] private int reputationRequiredToPromote = 2;
+    [SerializeField] private int reputationRequiredToPromote = 3;
+
+    [Header("Promotion Decision Stars")]
+    [SerializeField] private GameObject promotionStarsRoot;
+    [SerializeField] private Image[] promotionStars;
+    [SerializeField] private Color promotionStarNeutralColor = Color.white;
+    [SerializeField] private Color promotionStarSuccessColor = new Color(0.2f, 0.85f, 0.25f);
+    [SerializeField] private Color promotionStarFailColor = new Color(0.95f, 0.2f, 0.2f);
+    [SerializeField] private float promotionStarShakeSeconds = 0.4f;
+    [SerializeField] private float promotionStarShakeStrength = 12f;
+    [SerializeField] private float promotionDecisionDelaySeconds = 0.35f;
 
     [Header("Star")]
     [SerializeField] private Sprite starEmptySprite;
@@ -46,6 +55,7 @@ public class DayEndSummaryUI : MonoBehaviour
     [SerializeField] private float starPopSeconds = 0.2f;
 
     private Coroutine starRoutine;
+    private Coroutine promotionDecisionRoutine;
     private float previousTimeScale = 1f;
     private int lastSummaryDay = -1;
 
@@ -76,6 +86,8 @@ public class DayEndSummaryUI : MonoBehaviour
 
         if (continueButton != null)
             continueButton.onClick.AddListener(OnContinuePressed);
+
+        ShowPromotionStars(false);
     }
 
     private void OnEnable()
@@ -136,6 +148,8 @@ public class DayEndSummaryUI : MonoBehaviour
     private void UpdateContinueButtonForDay(int dayNumber, bool isFinalDay)
     {
         waitingForPromotionDecision = isFinalDay && dayNumber == promotionDay;
+        RefreshPromotionStars();
+        ShowPromotionStars(waitingForPromotionDecision);
 
         if (continueButton == null) return;
 
@@ -150,7 +164,10 @@ public class DayEndSummaryUI : MonoBehaviour
         // ✅ Final day: DO NOT Hide() first (or you'd hide the end screen too)
         if (waitingForPromotionDecision)
         {
-            ResolvePromotionOrFired();
+            if (promotionDecisionRoutine != null)
+                return;
+
+            promotionDecisionRoutine = StartCoroutine(ResolvePromotionOrFiredRoutine());
             return;
         }
 
@@ -161,11 +178,18 @@ public class DayEndSummaryUI : MonoBehaviour
             dayCycle.ContinueToNextDay();
     }
 
-    private void ResolvePromotionOrFired()
+    private IEnumerator ResolvePromotionOrFiredRoutine()
     {
-        int coins = coinWallet == null ? 0 : coinWallet.Coins;
         int rep = reputation == null ? 0 : reputation.Reputation;
-        bool promoted = coins >= coinsRequiredToPromote && rep >= reputationRequiredToPromote;
+        bool promoted = rep >= reputationRequiredToPromote;
+
+        if (continueButton != null)
+            continueButton.interactable = false;
+        AnimatePromotionStars(promoted);
+
+        float waitSeconds = Mathf.Max(0f, promotionStarShakeSeconds + promotionDecisionDelaySeconds);
+        if (waitSeconds > 0f)
+            yield return new WaitForSecondsRealtime(waitSeconds);
 
         // Hide ONLY the summary panel if you want (optional)
         // If you want the summary background to disappear, keep this:
@@ -178,14 +202,18 @@ public class DayEndSummaryUI : MonoBehaviour
         {
             ShowPanel(promotionScreen, promotionCanvasGroup);
 
-            Debug.Log($"[DayEndSummaryUI] PROMOTED ✅ (Coins={coins}/{coinsRequiredToPromote}, Rep={rep}/{reputationRequiredToPromote})");
+            Debug.Log($"[DayEndSummaryUI] PROMOTED ✅ (Rep={rep}/{reputationRequiredToPromote})");
         }
         else
         {
             ShowPanel(firedScreen, firedCanvasGroup);
 
-            Debug.Log($"[DayEndSummaryUI] FIRED ❌ (Coins={coins}/{coinsRequiredToPromote}, Rep={rep}/{reputationRequiredToPromote})");
+            Debug.Log($"[DayEndSummaryUI] FIRED ❌ (Rep={rep}/{reputationRequiredToPromote})");
         }
+
+        if (continueButton != null)
+            continueButton.interactable = true;
+        promotionDecisionRoutine = null;
     }
 
     private void UpdateUI(int spillsCleaned, float filthTime, int salaryBonus, bool earnedStar)
@@ -282,6 +310,7 @@ public class DayEndSummaryUI : MonoBehaviour
     private void Hide()
     {
         HideRoot();
+        ShowPromotionStars(false);
         Time.timeScale = previousTimeScale;
     }
 
@@ -339,5 +368,75 @@ public class DayEndSummaryUI : MonoBehaviour
 
         if (panel != null)
             panel.SetActive(false);
+    }
+
+    private void RefreshPromotionStars()
+    {
+        if (promotionStars == null || promotionStars.Length == 0) return;
+
+        int rep = reputation == null ? 0 : Mathf.Max(0, reputation.Reputation);
+        for (int i = 0; i < promotionStars.Length; i++)
+        {
+            if (promotionStars[i] == null) continue;
+
+            bool filled = i < rep;
+            if (starFullSprite != null || starEmptySprite != null)
+                promotionStars[i].sprite = filled ? starFullSprite : starEmptySprite;
+
+            promotionStars[i].color = promotionStarNeutralColor;
+            promotionStars[i].transform.localRotation = Quaternion.identity;
+        }
+    }
+
+    private void ShowPromotionStars(bool shouldShow)
+    {
+        if (promotionStarsRoot != null)
+            promotionStarsRoot.SetActive(shouldShow);
+    }
+
+    private void AnimatePromotionStars(bool promoted)
+    {
+        if (promotionStars == null || promotionStars.Length == 0) return;
+
+        if (starRoutine != null)
+            StopCoroutine(starRoutine);
+
+        starRoutine = StartCoroutine(PromotionStarResultRoutine(promoted));
+    }
+
+    private IEnumerator PromotionStarResultRoutine(bool promoted)
+    {
+        Color resultColor = promoted ? promotionStarSuccessColor : promotionStarFailColor;
+        float duration = Mathf.Max(0f, promotionStarShakeSeconds);
+        float strength = Mathf.Max(0f, promotionStarShakeStrength);
+
+        Vector3[] basePositions = new Vector3[promotionStars.Length];
+        for (int i = 0; i < promotionStars.Length; i++)
+        {
+            if (promotionStars[i] == null) continue;
+            basePositions[i] = promotionStars[i].transform.localPosition;
+            promotionStars[i].color = resultColor;
+        }
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            for (int i = 0; i < promotionStars.Length; i++)
+            {
+                if (promotionStars[i] == null) continue;
+
+                float x = Mathf.Sin((elapsed * 65f) + i) * strength;
+                promotionStars[i].transform.localPosition = basePositions[i] + new Vector3(x, 0f, 0f);
+            }
+
+            yield return null;
+        }
+
+        for (int i = 0; i < promotionStars.Length; i++)
+        {
+            if (promotionStars[i] == null) continue;
+            promotionStars[i].transform.localPosition = basePositions[i];
+        }
     }
 }
