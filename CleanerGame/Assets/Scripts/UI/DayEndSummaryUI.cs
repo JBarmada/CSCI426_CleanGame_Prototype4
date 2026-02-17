@@ -95,7 +95,7 @@ public class DayEndSummaryUI : MonoBehaviour
         if (coinWallet != null && salaryBonus > 0)
             coinWallet.AddCoins(salaryBonus);
 
-        bool earnedStar = filthyTime < 3f;
+        bool earnedStar = filthTime < 3f;
         if (earnedStar && reputation != null)
             reputation.TryIncreaseReputation();
 
@@ -136,8 +136,6 @@ public class DayEndSummaryUI : MonoBehaviour
 
         starRoutine = StartCoroutine(StarPopRoutine());
 
-        if (starPopClip != null)
-            PlayStarAudio(starPopClip);
     }
 
     private void PlayStarResultAudio(bool earnedStar)
