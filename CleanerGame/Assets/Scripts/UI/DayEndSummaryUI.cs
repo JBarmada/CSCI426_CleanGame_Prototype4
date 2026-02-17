@@ -26,6 +26,9 @@ public class DayEndSummaryUI : MonoBehaviour
     [SerializeField] private GameObject firedScreen;       // assign Fired Panel (inactive by default)
     [SerializeField] private CanvasGroup promotionCanvasGroup;
     [SerializeField] private CanvasGroup firedCanvasGroup;
+    [SerializeField] private GameObject promotionResultImage;
+    [SerializeField] private GameObject firedResultImage;
+    [SerializeField] private float resultImageRevealDelaySeconds = 2f;
 
     [Header("Promotion Rules")]
     [SerializeField] private int promotionDay = 3;
@@ -50,6 +53,12 @@ public class DayEndSummaryUI : MonoBehaviour
     [SerializeField] private string promotionCoinsFormat = "Coins: {0}";
     [SerializeField] private Vector2 promotionCoinsOffset = new Vector2(0f, -70f);
 
+    [Header("Promotion Decision Animation")]
+    [SerializeField] private float decisionSlideSeconds = 0.45f;
+    [SerializeField] private float decisionSlideStartRightOffset = 650f;
+    [SerializeField] private float decisionStarsSlideDelaySeconds = 0f;
+    [SerializeField] private float decisionCoinsSlideDelaySeconds = 0.12f;
+
     [Header("Star")]
     [SerializeField] private Sprite starEmptySprite;
     [SerializeField] private Sprite starFullSprite;
@@ -65,6 +74,8 @@ public class DayEndSummaryUI : MonoBehaviour
 
     private Coroutine starRoutine;
     private Coroutine promotionDecisionRoutine;
+    private Coroutine decisionSlideRoutine;
+    private Coroutine resultImageRevealRoutine;
     private float previousTimeScale = 1f;
     private int lastSummaryDay = -1;
 
@@ -126,6 +137,7 @@ public class DayEndSummaryUI : MonoBehaviour
         HidePanel(promotionScreen, promotionCanvasGroup);
         HidePanel(firedScreen, firedCanvasGroup);
         ShowPromotionCoins(false);
+        HideResultImages();
     }
 
     private void OnDisable()
@@ -150,6 +162,7 @@ public class DayEndSummaryUI : MonoBehaviour
         // Ensure end screens are hidden when summary shows
         HidePanel(promotionScreen, promotionCanvasGroup);
         HidePanel(firedScreen, firedCanvasGroup);
+        HideResultImages();
 
         float filthTime = restaurantManager == null ? 0f : restaurantManager.GetFilthTimeSeconds();
         int spillsCleaned = spillTracker == null ? 0 : spillTracker.SpillsCleaned;
@@ -179,6 +192,9 @@ public class DayEndSummaryUI : MonoBehaviour
         RefreshPromotionCoins();
         ShowPromotionStars(waitingForPromotionDecision);
         ShowPromotionCoins(waitingForPromotionDecision);
+
+        if (waitingForPromotionDecision)
+            StartPromotionDecisionSlideIn();
 
         if (waitingForPromotionDecision)
         {
@@ -239,12 +255,14 @@ public class DayEndSummaryUI : MonoBehaviour
         if (promoted)
         {
             ShowPanel(promotionScreen, promotionCanvasGroup);
+            StartResultImageReveal(promotionResultImage);
 
             Debug.Log($"[DayEndSummaryUI] PROMOTED ✅ (Rep={rep}/{reputationRequiredToPromote})");
         }
         else
         {
             ShowPanel(firedScreen, firedCanvasGroup);
+            StartResultImageReveal(firedResultImage);
 
             Debug.Log($"[DayEndSummaryUI] FIRED ❌ (Rep={rep}/{reputationRequiredToPromote})");
         }
@@ -432,9 +450,7 @@ public class DayEndSummaryUI : MonoBehaviour
     {
         bool isInternalObject = IsPromotionObjectUnderSummaryRoot(promotionStarsRoot);
 
-        if (shouldShow)
-            PositionPromotionDecisionUI();
-        else
+        if (!shouldShow)
             RestorePromotionStarsLayout();
 
         if (promotionStarsRoot != null && isInternalObject)
@@ -445,9 +461,7 @@ public class DayEndSummaryUI : MonoBehaviour
     {
         bool isInternalObject = IsPromotionObjectUnderSummaryRoot(promotionCoinsRoot);
 
-        if (shouldShow)
-            PositionPromotionDecisionUI();
-        else
+        if (!shouldShow)
             RestorePromotionCoinsLayout();
 
         if (promotionCoinsRoot != null && isInternalObject)
@@ -466,6 +480,79 @@ public class DayEndSummaryUI : MonoBehaviour
     {
         CenterPromotionStars();
         PositionPromotionCoins();
+    }
+
+    private void StartPromotionDecisionSlideIn()
+    {
+        if (decisionSlideRoutine != null)
+            StopCoroutine(decisionSlideRoutine);
+
+        decisionSlideRoutine = StartCoroutine(PromotionDecisionSlideRoutine());
+    }
+
+    private IEnumerator PromotionDecisionSlideRoutine()
+    {
+        RectTransform starsRect = promotionStarsRoot == null ? null : promotionStarsRoot.GetComponent<RectTransform>();
+        RectTransform coinsRect = promotionCoinsRoot == null ? null : promotionCoinsRoot.GetComponent<RectTransform>();
+
+        Vector2 starsTarget = GetAnchoredPositionForMiddleAnchor(starsRect, promotionStarsCenterOffset);
+        Vector2 coinsTarget = GetAnchoredPositionForMiddleAnchor(coinsRect, promotionCoinsOffset);
+
+        Vector2 starsStart = starsTarget + new Vector2(Mathf.Max(0f, decisionSlideStartRightOffset), 0f);
+        Vector2 coinsStart = coinsTarget + new Vector2(Mathf.Max(0f, decisionSlideStartRightOffset), 0f);
+
+        if (starsRect != null)
+        {
+            CaptureLayoutIfNeeded(starsRect, ref promotionStarsLayoutState, ref promotionStarsLayoutCaptured);
+            starsRect.anchorMin = new Vector2(0.5f, 0.5f);
+            starsRect.anchorMax = new Vector2(0.5f, 0.5f);
+            starsRect.pivot = new Vector2(0.5f, 0.5f);
+            starsRect.anchoredPosition = starsStart;
+        }
+
+        if (coinsRect != null)
+        {
+            CaptureLayoutIfNeeded(coinsRect, ref promotionCoinsLayoutState, ref promotionCoinsLayoutCaptured);
+            coinsRect.anchorMin = new Vector2(0.5f, 0.5f);
+            coinsRect.anchorMax = new Vector2(0.5f, 0.5f);
+            coinsRect.pivot = new Vector2(0.5f, 0.5f);
+            coinsRect.anchoredPosition = coinsStart;
+        }
+
+        float duration = Mathf.Max(0f, decisionSlideSeconds);
+        float starsDelay = Mathf.Max(0f, decisionStarsSlideDelaySeconds);
+        float coinsDelay = Mathf.Max(0f, decisionCoinsSlideDelaySeconds);
+        float totalDuration = Mathf.Max(starsDelay + duration, coinsDelay + duration);
+
+        if (duration <= 0f)
+        {
+            if (starsRect != null) starsRect.anchoredPosition = starsTarget;
+            if (coinsRect != null) coinsRect.anchoredPosition = coinsTarget;
+            decisionSlideRoutine = null;
+            yield break;
+        }
+
+        float elapsed = 0f;
+        while (elapsed < totalDuration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float starsT = Mathf.Clamp01((elapsed - starsDelay) / duration);
+            float coinsT = Mathf.Clamp01((elapsed - coinsDelay) / duration);
+            starsT = 1f - Mathf.Pow(1f - starsT, 3f);
+            coinsT = 1f - Mathf.Pow(1f - coinsT, 3f);
+
+            if (starsRect != null)
+                starsRect.anchoredPosition = Vector2.LerpUnclamped(starsStart, starsTarget, starsT);
+            if (coinsRect != null)
+                coinsRect.anchoredPosition = Vector2.LerpUnclamped(coinsStart, coinsTarget, coinsT);
+
+            yield return null;
+        }
+
+        if (starsRect != null) starsRect.anchoredPosition = starsTarget;
+        if (coinsRect != null) coinsRect.anchoredPosition = coinsTarget;
+
+        decisionSlideRoutine = null;
     }
 
     private void CenterPromotionStars()
@@ -501,11 +588,7 @@ public class DayEndSummaryUI : MonoBehaviour
     {
         if (targetRect == null) return;
 
-        if (!layoutCaptured)
-        {
-            layoutState = CaptureLayoutState(targetRect);
-            layoutCaptured = true;
-        }
+        CaptureLayoutIfNeeded(targetRect, ref layoutState, ref layoutCaptured);
 
         targetRect.anchorMin = new Vector2(0.5f, 0.5f);
         targetRect.anchorMax = new Vector2(0.5f, 0.5f);
@@ -517,12 +600,20 @@ public class DayEndSummaryUI : MonoBehaviour
             return;
         }
 
+        targetRect.anchoredPosition = GetAnchoredPositionForMiddleAnchor(targetRect, offset);
+    }
+
+    private Vector2 GetAnchoredPositionForMiddleAnchor(RectTransform targetRect, Vector2 offset)
+    {
+        if (targetRect == null)
+            return offset;
+
+        if (promotionMiddleAnchor == null)
+            return offset;
+
         RectTransform parentRect = targetRect.parent as RectTransform;
         if (parentRect == null)
-        {
-            targetRect.anchoredPosition = offset;
-            return;
-        }
+            return offset;
 
         Camera uiCamera = null;
         Canvas canvas = targetRect.GetComponentInParent<Canvas>();
@@ -531,12 +622,16 @@ public class DayEndSummaryUI : MonoBehaviour
 
         Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(uiCamera, promotionMiddleAnchor.position);
         if (RectTransformUtility.ScreenPointToLocalPointInRectangle(parentRect, screenPoint, uiCamera, out Vector2 localPoint))
-        {
-            targetRect.anchoredPosition = localPoint + offset;
-            return;
-        }
+            return localPoint + offset;
 
-        targetRect.anchoredPosition = offset;
+        return offset;
+    }
+
+    private void CaptureLayoutIfNeeded(RectTransform rect, ref RectLayoutState state, ref bool captured)
+    {
+        if (rect == null || captured) return;
+        state = CaptureLayoutState(rect);
+        captured = true;
     }
 
     private bool IsPromotionObjectUnderSummaryRoot(GameObject obj)
@@ -564,6 +659,12 @@ public class DayEndSummaryUI : MonoBehaviour
 
     private void RestorePromotionStarsLayout()
     {
+        if (decisionSlideRoutine != null)
+        {
+            StopCoroutine(decisionSlideRoutine);
+            decisionSlideRoutine = null;
+        }
+
         if (!promotionStarsLayoutCaptured || promotionStarsRoot == null) return;
 
         RectTransform rect = promotionStarsRoot.GetComponent<RectTransform>();
@@ -574,6 +675,12 @@ public class DayEndSummaryUI : MonoBehaviour
 
     private void RestorePromotionCoinsLayout()
     {
+        if (decisionSlideRoutine != null)
+        {
+            StopCoroutine(decisionSlideRoutine);
+            decisionSlideRoutine = null;
+        }
+
         if (!promotionCoinsLayoutCaptured || promotionCoinsRoot == null) return;
 
         RectTransform rect = promotionCoinsRoot.GetComponent<RectTransform>();
@@ -634,5 +741,42 @@ public class DayEndSummaryUI : MonoBehaviour
             if (promotionStars[i] == null) continue;
             promotionStars[i].transform.localPosition = basePositions[i];
         }
+    }
+
+    private void HideResultImages()
+    {
+        if (resultImageRevealRoutine != null)
+        {
+            StopCoroutine(resultImageRevealRoutine);
+            resultImageRevealRoutine = null;
+        }
+
+        if (promotionResultImage != null)
+            promotionResultImage.SetActive(false);
+
+        if (firedResultImage != null)
+            firedResultImage.SetActive(false);
+    }
+
+    private void StartResultImageReveal(GameObject targetImage)
+    {
+        HideResultImages();
+
+        if (targetImage == null)
+            return;
+
+        resultImageRevealRoutine = StartCoroutine(DelayedShowResultImageRoutine(targetImage));
+    }
+
+    private IEnumerator DelayedShowResultImageRoutine(GameObject targetImage)
+    {
+        float delay = Mathf.Max(0f, resultImageRevealDelaySeconds);
+        if (delay > 0f)
+            yield return new WaitForSecondsRealtime(delay);
+
+        if (targetImage != null)
+            targetImage.SetActive(true);
+
+        resultImageRevealRoutine = null;
     }
 }
