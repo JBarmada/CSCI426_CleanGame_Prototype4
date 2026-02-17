@@ -4540,7 +4540,7 @@ MonoBehaviour:
   enabledAlpha: 1
   audioSource: {fileID: 1460187590}
   availableClip: {fileID: 8300000, guid: 513253dbc2111434cb160aa269b3b9ce, type: 3}
-  purchasedClip: {fileID: 8300000, guid: f8f61c103256643d0927151dfb377eab, type: 3}
+  purchasedClip: {fileID: 8300000, guid: 4bde9292532a949f6a8f836b4e3a2e9f, type: 3}
   availableVolume: 1
   purchasedVolume: 1
 --- !u!82 &1460187590
