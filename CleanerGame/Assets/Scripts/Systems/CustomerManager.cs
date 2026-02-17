@@ -10,6 +10,8 @@ public class CustomerManager : MonoBehaviour
     [SerializeField] private Transform exitPoint;
     [SerializeField] private float spawnIntervalSeconds = 6f;
     [SerializeField] private int maxActiveCustomers = 2;
+    [Header("Spills")]
+    [SerializeField] private SpillSpawner spillSpawner;
 
     private readonly List<Customer> activeCustomers = new List<Customer>();
     private Chair[] chairs;
@@ -91,4 +93,11 @@ public class CustomerManager : MonoBehaviour
 
         activeCustomers.Add(customer);
     }
+    public void OnCustomerLeftChair(Vector3 chairPos)
+{
+    if (spillSpawner == null) return;
+
+    spillSpawner.TrySpawnSpillNearChair(chairPos);
+}
+
 }

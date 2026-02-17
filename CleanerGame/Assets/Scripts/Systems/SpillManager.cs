@@ -34,34 +34,30 @@ public class SpillManager : MonoBehaviour
     }
 
     private void Update()
+{
+    if (!playerInRange || cleaned) return;
+
+    // Hold-to-sweep
+    if (Input.GetKey(sweepKey))
     {
-        if (!playerInRange) return;
+        sweepProgress += sweepsPerSecond * Time.deltaTime;
+        UpdateVisual();
 
-        // Hold-to-sweep
-        if (Input.GetKey(sweepKey))
+        if (sweepProgress >= sweepsToClean)
         {
-            if (pressesRemaining <= 0)
-            {
-                if (!cleaned)
-                {
-                    cleaned = true;
-                    AwardCoins();
-                }
+            cleaned = true;
+            AwardCoins();
 
-                Debug.Log("[Spill3D] Clean complete -> Destroy");
-                if (destroyRoot && transform.parent != null) Destroy(transform.parent.gameObject);
-                else Destroy(gameObject);
-            }
-            sweepProgress += sweepsPerSecond * Time.deltaTime;
-            UpdateVisual();
+            Debug.Log("[Spill3D] Clean complete -> Destroy");
 
-            if (sweepProgress >= sweepsToClean)
-            {
-                if (destroyRoot && transform.parent != null) Destroy(transform.parent.gameObject);
-                else Destroy(gameObject);
-            }
+            if (destroyRoot && transform.parent != null)
+                Destroy(transform.parent.gameObject);
+            else
+                Destroy(gameObject);
         }
     }
+}
+
 
     private void OnTriggerEnter(Collider other)
     {
