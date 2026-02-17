@@ -1,5 +1,9 @@
-file edits:
-- broom prefab to player
-- thirdperson controller added broom controls, removed jump
-- added audio to broom stuff
-- added effects to the broom
+Add gameFlowManagers
+add start UI canvas -> Panel Canvas Group
+add Pause UI panel canvas Group
+add End UI
+add 3 strike imades and add strike hud to parent objects. assign stuff to parent
+add boss game object and give bossfilth reaction
+add points for patrol
+add a world space yell text above boss
+enable usebosscutscene
