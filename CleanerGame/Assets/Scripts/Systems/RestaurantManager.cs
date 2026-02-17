@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 
 public class RestaurantManager : MonoBehaviour
 {
@@ -19,6 +20,8 @@ public class RestaurantManager : MonoBehaviour
     [Header("Dirtiness Tracking")]
     [SerializeField] private float dirtinessRefreshSeconds = 1f;
     [SerializeField] private RestaurantDayCycle dayCycle;
+    [SerializeField] private int filthyLimit = 3;
+    [SerializeField] private bool useBossCutscene = true;
 
     [Header("Customer Caps")]
     [SerializeField] private int cleanMaxCustomers = 12;
@@ -34,8 +37,16 @@ public class RestaurantManager : MonoBehaviour
     private float dirtinessTimer;
     private int cachedMaxCustomers;
     private DirtinessLevel currentDirtinessLevel;
+    private DirtinessLevel previousDirtinessLevel;
     private float veryDirtySeconds;
     private float filthySeconds;
+    private int filthyCount;
+    private bool gameOverTriggered;
+    private bool pendingFilthyStrike;
+
+    public event Action<int> FilthyCountChanged;
+    public event Action GameOverByFilth;
+    public event Action FilthyStrikeTriggered;
 
     private void Awake()
     {
@@ -100,6 +111,21 @@ public class RestaurantManager : MonoBehaviour
         return currentDirtinessLevel;
     }
 
+    public int GetFilthyCount()
+    {
+        return filthyCount;
+    }
+
+    public bool IsFilthyStrikePending()
+    {
+        return pendingFilthyStrike;
+    }
+
+    public int GetFilthyLimit()
+    {
+        return Mathf.Max(1, filthyLimit);
+    }
+
     public float GetVeryDirtySeconds()
     {
         return veryDirtySeconds;
@@ -132,7 +158,41 @@ public class RestaurantManager : MonoBehaviour
         Dirtiness = FindObjectsByType<SpillManager>(FindObjectsSortMode.None).Length;
         Dirtiness = Mathf.Max(Dirtiness, 0);
         cachedMaxCustomers = CalculateMaxCustomers(Dirtiness);
+        previousDirtinessLevel = currentDirtinessLevel;
         currentDirtinessLevel = CalculateDirtinessLevel(Dirtiness);
+        CheckFilthyTransition();
+    }
+
+    private void CheckFilthyTransition()
+    {
+        if (currentDirtinessLevel != DirtinessLevel.Filthy) return;
+        if (previousDirtinessLevel == DirtinessLevel.Filthy) return;
+
+        if (pendingFilthyStrike) return;
+        pendingFilthyStrike = true;
+
+        if (!useBossCutscene || FilthyStrikeTriggered == null)
+        {
+            ConfirmFilthyStrike();
+            return;
+        }
+
+        FilthyStrikeTriggered?.Invoke();
+    }
+
+    public void ConfirmFilthyStrike()
+    {
+        if (!pendingFilthyStrike) return;
+        pendingFilthyStrike = false;
+
+        filthyCount++;
+        FilthyCountChanged?.Invoke(filthyCount);
+
+        if (!gameOverTriggered && filthyCount >= Mathf.Max(1, filthyLimit))
+        {
+            gameOverTriggered = true;
+            GameOverByFilth?.Invoke();
+        }
     }
 
     private DirtinessLevel CalculateDirtinessLevel(int dirtiness)
