@@ -1,16 +1,16 @@
+using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class CoinHud : MonoBehaviour
 {
-    [SerializeField] private Text coinText;
+    [SerializeField] private TMP_Text coinText;
     [SerializeField] private string prefix = "Coins: ";
     [SerializeField] private CoinWallet wallet;
 
     private void Awake()
     {
         if (coinText == null)
-            coinText = GetComponent<Text>();
+            coinText = GetComponent<TMP_Text>();
     }
 
     private void OnEnable()
