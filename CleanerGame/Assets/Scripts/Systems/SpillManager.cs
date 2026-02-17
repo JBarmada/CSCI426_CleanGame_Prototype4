@@ -37,10 +37,13 @@ public class SpillManager : MonoBehaviour
 {
     if (!playerInRange || cleaned) return;
 
-    // Hold-to-sweep
     if (Input.GetKey(sweepKey))
     {
-        sweepProgress += sweepsPerSecond * Time.deltaTime;
+        float mult = BroomPowerupSystem.Instance != null
+            ? BroomPowerupSystem.Instance.CurrentMultiplier
+            : 1f;
+
+        sweepProgress += (sweepsPerSecond * mult) * Time.deltaTime;
         UpdateVisual();
 
         if (sweepProgress >= sweepsToClean)
@@ -48,7 +51,7 @@ public class SpillManager : MonoBehaviour
             cleaned = true;
             AwardCoins();
 
-            Debug.Log("[Spill3D] Clean complete -> Destroy");
+            Debug.Log($"[Spill] Cleaned with multiplier {mult:F2}x");
 
             if (destroyRoot && transform.parent != null)
                 Destroy(transform.parent.gameObject);
@@ -57,6 +60,7 @@ public class SpillManager : MonoBehaviour
         }
     }
 }
+
 
 
     private void OnTriggerEnter(Collider other)
