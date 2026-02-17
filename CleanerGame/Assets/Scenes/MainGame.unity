@@ -891,6 +891,7 @@ MonoBehaviour:
   exitPoint: {fileID: 1140798791}
   spawnIntervalSeconds: 2
   maxActiveCustomers: 12
+  spillSpawner: {fileID: 0}
 --- !u!4 &461730724
 Transform:
   m_ObjectHideFlags: 0
@@ -1050,18 +1051,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SpillSpawner
   spillPrefab: {fileID: 2547957640469633045, guid: 291b2321874ff4d4a94e11bf7e18511d, type: 3}
-  tables:
-  - {fileID: 1109788439}
-  - {fileID: 513788644}
-  - {fileID: 1132978822}
-  - {fileID: 2142488512}
-  - {fileID: 1810826749}
-  - {fileID: 223149652}
-  - {fileID: 2138073265}
-  customerManager: {fileID: 461730723}
-  minCustomersToSpawn: 3
-  baseSecondsPerSpill: 10
-  maxSpillsPerSecond: 0.25
   maxActiveSpills: 10
   innerRing: 1.2
   outerRing: 2.4
@@ -2331,6 +2320,7 @@ GameObject:
   - component: {fileID: 1365000189}
   - component: {fileID: 1365000191}
   - component: {fileID: 1365000190}
+  - component: {fileID: 1365000192}
   m_Layer: 0
   m_Name: CoinManager
   m_TagString: Untagged
@@ -2467,6 +2457,21 @@ MonoBehaviour:
   audioSource: {fileID: 1365000190}
   coinClip: {fileID: 0}
   coinVolume: 1
+--- !u!114 &1365000192
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1365000188}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb05a1bf6ed633b42bddafd7a57360de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CoinHud
+  coinText: {fileID: 1963890196}
+  prefix: 'Coins: '
+  wallet: {fileID: 1365000191}
 --- !u!1 &1371818834
 GameObject:
   m_ObjectHideFlags: 0
@@ -3100,7 +3105,7 @@ GameObject:
   - component: {fileID: 1963890197}
   - component: {fileID: 1963890196}
   m_Layer: 5
-  m_Name: Text (TMP)
+  m_Name: Wallet
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3145,7 +3150,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: New Text
+  m_text: 'Coins:
+
+'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
