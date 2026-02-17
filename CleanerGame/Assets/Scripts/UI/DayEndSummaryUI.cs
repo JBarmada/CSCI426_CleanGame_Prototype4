@@ -22,10 +22,13 @@ public class DayEndSummaryUI : MonoBehaviour
     [SerializeField] private Button continueButton;
 
     [Header("Star")]
+    [SerializeField] private Sprite starEmptySprite;
+    [SerializeField] private Sprite starFullSprite;
     [SerializeField] private Color starInactiveColor = Color.black;
     [SerializeField] private Color starActiveColor = new Color(1f, 0.85f, 0.2f);
     [SerializeField] private AudioSource starAudioSource;
     [SerializeField] private AudioClip starPopClip;
+    [SerializeField] private AudioClip starFailClip;
     [Range(0f, 1f)]
     [SerializeField] private float starPopVolume = 1f;
     [SerializeField] private float starPopScale = 1.2f;
@@ -116,7 +119,9 @@ public class DayEndSummaryUI : MonoBehaviour
 
         if (reputationStar != null)
         {
+            reputationStar.sprite = earnedStar ? starFullSprite : starEmptySprite;
             reputationStar.color = earnedStar ? starActiveColor : starInactiveColor;
+            PlayStarResultAudio(earnedStar);
             if (earnedStar)
                 PlayStarPop();
         }
@@ -132,15 +137,33 @@ public class DayEndSummaryUI : MonoBehaviour
         starRoutine = StartCoroutine(StarPopRoutine());
 
         if (starPopClip != null)
-        {
-            if (starAudioSource == null)
-                starAudioSource = GetComponent<AudioSource>();
-            if (starAudioSource == null)
-                starAudioSource = gameObject.AddComponent<AudioSource>();
+            PlayStarAudio(starPopClip);
+    }
 
-            starAudioSource.playOnAwake = false;
-            starAudioSource.PlayOneShot(starPopClip, starPopVolume);
+    private void PlayStarResultAudio(bool earnedStar)
+    {
+        if (earnedStar)
+        {
+            if (starPopClip != null)
+                PlayStarAudio(starPopClip);
+            return;
         }
+
+        if (starFailClip != null)
+            PlayStarAudio(starFailClip);
+    }
+
+    private void PlayStarAudio(AudioClip clip)
+    {
+        if (clip == null) return;
+
+        if (starAudioSource == null)
+            starAudioSource = GetComponent<AudioSource>();
+        if (starAudioSource == null)
+            starAudioSource = gameObject.AddComponent<AudioSource>();
+
+        starAudioSource.playOnAwake = false;
+        starAudioSource.PlayOneShot(clip, starPopVolume);
     }
 
     private IEnumerator StarPopRoutine()
