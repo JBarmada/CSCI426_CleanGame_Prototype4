@@ -891,6 +891,7 @@ MonoBehaviour:
   exitPoint: {fileID: 1140798791}
   spawnIntervalSeconds: 2
   maxActiveCustomers: 12
+  restaurantManager: {fileID: 0}
   spillSpawner: {fileID: 613359821}
 --- !u!4 &461730724
 Transform:
@@ -1023,6 +1024,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c36534fee8f74f84eacc21d72527c9dd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RestaurantManager
+  dirtinessRefreshSeconds: 1
+  cleanMaxCustomers: 12
+  someDirtinessMinSpills: 1
+  mediumDirtinessMinSpills: 4
+  tooMuchDirtinessMinSpills: 7
+  tooMuchDirtinessSpan: 5
+  someDirtinessCustomers: {x: 8, y: 10}
+  mediumDirtinessCustomers: {x: 4, y: 6}
+  tooMuchDirtinessCustomers: {x: 1, y: 2}
 --- !u!4 &613359820
 Transform:
   m_ObjectHideFlags: 0
@@ -2794,7 +2804,7 @@ MonoBehaviour:
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
   m_Interactable: 1
-  m_TargetGraphic: {fileID: 0}
+  m_TargetGraphic: {fileID: 1460187586}
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
@@ -3279,7 +3289,7 @@ GameObject:
   - component: {fileID: 1963890197}
   - component: {fileID: 1963890196}
   m_Layer: 5
-  m_Name: Text (TMP)
+  m_Name: Coins
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
