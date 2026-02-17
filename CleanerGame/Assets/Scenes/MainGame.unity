@@ -1171,6 +1171,7 @@ GameObject:
   - component: {fileID: 613359821}
   - component: {fileID: 613359823}
   - component: {fileID: 613359822}
+  - component: {fileID: 613359824}
   m_Layer: 0
   m_Name: Restuarant Manager
   m_TagString: Untagged
@@ -1194,6 +1195,7 @@ MonoBehaviour:
   cleanMaxCustomers: 12
   someDirtinessMinSpills: 1
   mediumDirtinessMinSpills: 4
+  veryDirtyMinSpills: 6
   tooMuchDirtinessMinSpills: 7
   tooMuchDirtinessSpan: 5
   someDirtinessCustomers: {x: 8, y: 10}
@@ -1362,6 +1364,21 @@ MonoBehaviour:
   afternoonJingle: {fileID: 0}
   closingJingle: {fileID: 0}
   jingleVolume: 1
+--- !u!114 &613359824
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 613359818}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bcf9628e6a62e4149b57331256b5752d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BroomPowerupSystem
+  maxUsesPerDay: 2
+  speedMultiplierPerUse: 1.15
+  stackUses: 1
 --- !u!1001 &615565453
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3132,9 +3149,11 @@ MonoBehaviour:
   restaurantManager: {fileID: 613359819}
   cleanText: Clean
   dirtyText: Dirty
+  veryDirtyText: Very Dirty
   filthyText: Filthy
   cleanColor: {r: 0.2, g: 0.8, b: 0.2, a: 1}
   dirtyColor: {r: 0.45, g: 0.25, b: 0.1, a: 1}
+  veryDirtyColor: {r: 0.7, g: 0.25, b: 0.1, a: 1}
   filthyColor: {r: 0.9, g: 0.1, b: 0.1, a: 1}
   refreshSeconds: 0.25
 --- !u!1 &1460187584
@@ -3173,7 +3192,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -0.000061035156, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 1, y: 1}
 --- !u!114 &1460187586
@@ -3189,7 +3208,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.038047332, g: 0.2737553, b: 0.8962264, a: 1}
+  m_Color: {r: 0.7830189, g: 0.18836774, b: 0.6503155, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -3235,7 +3254,7 @@ MonoBehaviour:
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
   m_Colors:
-    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
+    m_NormalColor: {r: 1, g: 0, b: 0, a: 1}
     m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
     m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
     m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
@@ -3271,7 +3290,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PowerupButton
   wallet: {fileID: 1365000191}
-  broomSystem: {fileID: 0}
+  broomSystem: {fileID: 613359824}
   button: {fileID: 1460187588}
   icon: {fileID: 1460187586}
   broomCost: 5
