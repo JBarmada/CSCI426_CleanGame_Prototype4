@@ -12,6 +12,7 @@ public class SpillManager : MonoBehaviour
     [SerializeField] private int coinsPerClean = 1;
     [SerializeField] private CoinWallet coinWallet;
     [SerializeField] private RestaurantSpillTracker spillTracker;
+    [SerializeField] private SpillComboSystem comboSystem;
 
     [Header("Fade")]
     [SerializeField] private SpriteRenderer spriteRenderer; // assign, or auto-find
@@ -93,7 +94,16 @@ sweepProgress += (sweepsPerSecond * mult) * Time.deltaTime;
             coinWallet = FindFirstObjectByType<CoinWallet>();
 
         if (coinWallet != null)
-            coinWallet.AddCoins(coinsPerClean);
+        {
+            if (comboSystem == null)
+                comboSystem = SpillComboSystem.Instance ?? FindFirstObjectByType<SpillComboSystem>();
+
+            int awardedCoins = comboSystem != null
+                ? comboSystem.RegisterSpillCleanAndGetCoins(coinsPerClean)
+                : coinsPerClean;
+
+            coinWallet.AddCoins(awardedCoins);
+        }
 
         if (spillTracker == null)
             spillTracker = FindFirstObjectByType<RestaurantSpillTracker>();

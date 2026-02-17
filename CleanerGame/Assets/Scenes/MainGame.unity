@@ -2463,6 +2463,7 @@ GameObject:
   - component: {fileID: 613359826}
   - component: {fileID: 613359825}
   - component: {fileID: 613359827}
+  - component: {fileID: 613359828}
   m_Layer: 0
   m_Name: Restuarant Manager
   m_TagString: Untagged
@@ -2745,6 +2746,28 @@ MonoBehaviour:
   dirtyPenaltySeconds: 0
   veryDirtyPenaltySeconds: 2
   filthyPenaltySeconds: 3
+--- !u!114 &613359828
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 613359818}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: acb935b9688f04f37a32a2612210fe5f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SpillComboSystem
+  comboTimeoutSeconds: 3
+  multiplierStepPerCombo: 1
+  maxCoinMultiplier: 3
+  restaurantManager: {fileID: 0}
+  breakAtOrAboveDirtiness: 2
+  dayCycle: {fileID: 0}
+  resetOnNewDay: 1
+  debugComboCount: 0
+  debugCurrentMultiplier: 0
+  debugSecondsBeforeTimeout: 0
 --- !u!1001 &615565453
 PrefabInstance:
   m_ObjectHideFlags: 0
