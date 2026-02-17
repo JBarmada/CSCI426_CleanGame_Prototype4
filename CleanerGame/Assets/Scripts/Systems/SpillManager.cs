@@ -39,11 +39,8 @@ public class SpillManager : MonoBehaviour
 
     if (Input.GetKey(sweepKey))
     {
-        float mult = BroomPowerupSystem.Instance != null
-            ? BroomPowerupSystem.Instance.CurrentMultiplier
-            : 1f;
-
-        sweepProgress += (sweepsPerSecond * mult) * Time.deltaTime;
+        float mult = BroomPowerupSystem.Instance != null ? BroomPowerupSystem.Instance.CurrentMultiplier : 1f;
+sweepProgress += (sweepsPerSecond * mult) * Time.deltaTime;
         UpdateVisual();
 
         if (sweepProgress >= sweepsToClean)

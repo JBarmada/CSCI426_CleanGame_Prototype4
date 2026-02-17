@@ -5,17 +5,17 @@ public class BroomPowerupSystem : MonoBehaviour
 {
     public static BroomPowerupSystem Instance { get; private set; }
 
-    [Header("Limits")]
+    [Header("Limits (per restaurant day)")]
     [SerializeField] private int maxUsesPerDay = 2;
 
     [Header("Effect")]
-    [SerializeField] private float speedMultiplierPerUse = 1.15f;
+    [SerializeField] private float speedMultiplierPerUse = 1.15f; // +15%
     [SerializeField] private bool stackUses = true;
 
-    public event Action OnChanged;
+    [Header("Wiring")]
+    [SerializeField] private RestaurantDayCycle dayCycle;
 
-    private const string DateKey = "BroomPowerup_Date";
-    private const string UsesKey = "BroomPowerup_Uses";
+    public event Action OnChanged;
 
     private int usesToday;
 
@@ -28,56 +28,54 @@ public class BroomPowerupSystem : MonoBehaviour
         {
             if (usesToday <= 0) return 1f;
             if (!stackUses) return speedMultiplierPerUse;
-            return Mathf.Pow(speedMultiplierPerUse, usesToday);
+            return Mathf.Pow(speedMultiplierPerUse, usesToday); // ✅ stacks: 1.15^uses
         }
     }
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(gameObject);
-            return;
-        }
-
+        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
-        LoadAndResetIfNewDay();
+    }
+
+    private void Start()
+    {
+        if (dayCycle == null)
+            dayCycle = FindFirstObjectByType<RestaurantDayCycle>();
+
+        if (dayCycle != null)
+            dayCycle.DayStarted += HandleDayStarted;
+
+        // initialize for current day
+        usesToday = 0;
         OnChanged?.Invoke();
     }
 
-    private void LoadAndResetIfNewDay()
+    private void OnDestroy()
     {
-        string today = DateTime.UtcNow.ToString("yyyy-MM-dd");
+        if (dayCycle != null)
+            dayCycle.DayStarted -= HandleDayStarted;
+    }
 
-        string savedDate = PlayerPrefs.GetString(DateKey, "");
-        usesToday = PlayerPrefs.GetInt(UsesKey, 0);
-
-        if (savedDate != today)
-        {
-            usesToday = 0;
-            PlayerPrefs.SetString(DateKey, today);
-            PlayerPrefs.SetInt(UsesKey, usesToday);
-            PlayerPrefs.Save();
-        }
+    private void HandleDayStarted(int newDayCount)
+    {
+        usesToday = 0;              // ✅ reset uses each restaurant day
+        OnChanged?.Invoke();
+        Debug.Log($"[BroomPowerup] New day {newDayCount} -> uses reset.");
     }
 
     public bool CanUseToday()
     {
-        LoadAndResetIfNewDay();
         return usesToday < maxUsesPerDay;
     }
 
     public bool TryConsumeUse()
     {
-        LoadAndResetIfNewDay();
-        if (usesToday >= maxUsesPerDay) return false;
+        if (!CanUseToday()) return false;
 
         usesToday++;
-        PlayerPrefs.SetInt(UsesKey, usesToday);
-        PlayerPrefs.SetString(DateKey, DateTime.UtcNow.ToString("yyyy-MM-dd"));
-        PlayerPrefs.Save();
-
         OnChanged?.Invoke();
+        Debug.Log($"[BroomPowerup] Used {usesToday}/{maxUsesPerDay}. Mult={CurrentMultiplier:F2}x");
         return true;
     }
 }
