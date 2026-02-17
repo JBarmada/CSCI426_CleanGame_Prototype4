@@ -18,22 +18,27 @@ public class PowerupButton : MonoBehaviour
 
     [Header("Audio")]
     [SerializeField] private AudioSource audioSource;
-    [SerializeField] private AudioClip activateClip;
+    [SerializeField] private AudioClip availableClip;   // 🔔 plays when button lights up
     [Range(0f, 1f)]
-    [SerializeField] private float activateVolume = 1f;
+    [SerializeField] private float availableVolume = 1f;
+
+    private bool wasAvailableLastFrame = false;
 
     private void Awake()
     {
-        // Components on same object
+        // Components
         if (button == null) button = GetComponent<Button>();
         if (icon == null) icon = GetComponent<Image>();
 
-        // Prefer singletons, fallback to find
-        if (wallet == null) wallet = CoinWallet.Instance != null ? CoinWallet.Instance : FindFirstObjectByType<CoinWallet>();
-        if (broomSystem == null) broomSystem = BroomPowerupSystem.Instance != null ? BroomPowerupSystem.Instance : FindFirstObjectByType<BroomPowerupSystem>();
+        // Systems
+        if (wallet == null)
+            wallet = CoinWallet.Instance != null ? CoinWallet.Instance : FindFirstObjectByType<CoinWallet>();
 
-        // AudioSource convenience
-        if (audioSource == null && activateClip != null)
+        if (broomSystem == null)
+            broomSystem = BroomPowerupSystem.Instance != null ? BroomPowerupSystem.Instance : FindFirstObjectByType<BroomPowerupSystem>();
+
+        // Audio setup
+        if (audioSource == null && availableClip != null)
         {
             audioSource = GetComponent<AudioSource>();
             if (audioSource == null)
@@ -60,33 +65,50 @@ public class PowerupButton : MonoBehaviour
         if (broomSystem != null) broomSystem.OnChanged -= Refresh;
     }
 
-    private void HandleCoinsChanged(int _) => Refresh();
+    private void HandleCoinsChanged(int _)
+    {
+        Refresh();
+    }
 
     private void Refresh()
     {
-        // If anything critical is missing, make it clearly disabled (not “fake active”)
-        if (button == null || icon == null)
+        if (button == null || icon == null || wallet == null || broomSystem == null)
             return;
-
-        if (wallet == null || broomSystem == null)
-        {
-            button.interactable = false;
-            SetIconAlpha(disabledAlpha);
-            return;
-        }
 
         bool canAfford = wallet.Coins >= broomCost;
         bool hasUses = broomSystem.CanUseToday();
+        bool isAvailableNow = canAfford && hasUses;
 
-        bool canBuy = canAfford && hasUses;
-        button.interactable = canBuy;
+        // 🔔 Play sound ONLY when becoming available
+        if (isAvailableNow && !wasAvailableLastFrame)
+        {
+            PlayAvailableSound();
+        }
 
-        SetIconAlpha(canBuy ? enabledAlpha : disabledAlpha);
+        wasAvailableLastFrame = isAvailableNow;
+
+        button.interactable = isAvailableNow;
+        SetIconAlpha(isAvailableNow ? enabledAlpha : disabledAlpha);
+    }
+
+    private void PlayAvailableSound()
+    {
+        if (availableClip == null) return;
+
+        if (audioSource == null)
+        {
+            audioSource = GetComponent<AudioSource>();
+            if (audioSource == null)
+                audioSource = gameObject.AddComponent<AudioSource>();
+
+            audioSource.playOnAwake = false;
+        }
+
+        audioSource.PlayOneShot(availableClip, availableVolume);
     }
 
     private void SetIconAlpha(float a)
     {
-        if (icon == null) return;
         var c = icon.color;
         c.a = a;
         icon.color = c;
@@ -94,54 +116,17 @@ public class PowerupButton : MonoBehaviour
 
     private void OnClickBuy()
     {
-        // Re-acquire in case scene load order changed
-        if (wallet == null) wallet = CoinWallet.Instance != null ? CoinWallet.Instance : FindFirstObjectByType<CoinWallet>();
-        if (broomSystem == null) broomSystem = BroomPowerupSystem.Instance != null ? BroomPowerupSystem.Instance : FindFirstObjectByType<BroomPowerupSystem>();
+        if (wallet == null || broomSystem == null) return;
 
-        if (wallet == null || broomSystem == null)
-        {
-            Debug.LogWarning("[PowerupButton] Missing CoinWallet or BroomPowerupSystem.");
-            Refresh();
-            return;
-        }
-
-        if (!broomSystem.CanUseToday())
-        {
-            Debug.Log("[PowerupButton] No powerup uses left today.");
-            Refresh();
-            return;
-        }
-
-        if (!wallet.TrySpend(broomCost))
-        {
-            Debug.Log("[PowerupButton] Not enough coins.");
-            Refresh();
-            return;
-        }
-
+        if (!broomSystem.CanUseToday()) return;
+        if (!wallet.TrySpend(broomCost)) return;
         if (!broomSystem.TryConsumeUse())
         {
-            // Safety refund
-            wallet.AddCoins(broomCost);
-            Debug.LogWarning("[PowerupButton] Failed to consume use. Refunded coins.");
-            Refresh();
+            wallet.AddCoins(broomCost); // refund safety
             return;
         }
 
-        // ✅ Play activation SFX ONLY on success
-        if (activateClip != null)
-        {
-            if (audioSource == null)
-            {
-                audioSource = GetComponent<AudioSource>();
-                if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
-                audioSource.playOnAwake = false;
-            }
-
-            audioSource.PlayOneShot(activateClip, activateVolume);
-        }
-
-        Debug.Log($"[PowerupButton] Broom powerup activated! UsesToday={broomSystem.UsesToday}, Mult={broomSystem.CurrentMultiplier:F2}x");
+        Debug.Log($"[PowerupButton] Broom used. Uses={broomSystem.UsesToday}, Mult={broomSystem.CurrentMultiplier:F2}x");
         Refresh();
     }
 }
