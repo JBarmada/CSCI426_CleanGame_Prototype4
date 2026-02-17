@@ -32,22 +32,20 @@ public class Customer : MonoBehaviour
         state = CustomerState.WalkingToSeat;
     }
 
-    void Update()
+    private void Update()
     {
         if (state == CustomerState.WalkingToSeat)
         {
             if (assignedChair == null)
             {
                 if (manager != null)
-                {
                     manager.TryAssignChair(this);
-                }
                 return;
             }
 
-            MoveTowards(assignedChair == null ? transform.position : assignedChair.GetSeatPosition());
+            MoveTowards(assignedChair.GetSeatPosition());
 
-            if (assignedChair != null && Vector3.Distance(transform.position, assignedChair.GetSeatPosition()) <= arrivalDistance)
+            if (Vector3.Distance(transform.position, assignedChair.GetSeatPosition()) <= arrivalDistance)
             {
                 if (assignedChair.TrySit(this))
                 {
@@ -58,20 +56,28 @@ public class Customer : MonoBehaviour
                 {
                     assignedChair.ReleaseReservation(this);
                     assignedChair = null;
-                    manager.TryAssignChair(this);
+
+                    if (manager != null)
+                        manager.TryAssignChair(this);
                 }
             }
         }
         else if (state == CustomerState.Sitting)
         {
             sitTimer -= Time.deltaTime;
+
             if (sitTimer <= 0f)
             {
+                // ✅ Customer stands up: spawn spill on floor near chair, then free chair
                 if (assignedChair != null)
                 {
-                    assignedChair.CustomerLeft();
+                    if (manager != null)
+                        manager.OnCustomerLeftChair(assignedChair.transform.position);
+
+                    assignedChair.CustomerLeft(); // frees occupancy
                     assignedChair = null;
                 }
+
                 state = CustomerState.Leaving;
             }
         }
@@ -80,7 +86,7 @@ public class Customer : MonoBehaviour
             if (exitPoint == null)
             {
                 ReleaseReservationIfNeeded();
-                manager.DespawnCustomer(this);
+                if (manager != null) manager.DespawnCustomer(this);
                 return;
             }
 
@@ -89,7 +95,7 @@ public class Customer : MonoBehaviour
             if (Vector3.Distance(transform.position, exitPoint.position) <= arrivalDistance)
             {
                 ReleaseReservationIfNeeded();
-                manager.DespawnCustomer(this);
+                if (manager != null) manager.DespawnCustomer(this);
             }
         }
     }
@@ -104,7 +110,6 @@ public class Customer : MonoBehaviour
 
     private void MoveTowards(Vector3 target)
     {
-        Vector3 next = Vector3.MoveTowards(transform.position, target, moveSpeed * Time.deltaTime);
-        transform.position = next;
+        transform.position = Vector3.MoveTowards(transform.position, target, moveSpeed * Time.deltaTime);
     }
 }
