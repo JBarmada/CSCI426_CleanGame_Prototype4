@@ -32,14 +32,23 @@ public class DayEndSummaryUI : MonoBehaviour
     [SerializeField] private int reputationRequiredToPromote = 3;
 
     [Header("Promotion Decision Stars")]
+    [SerializeField] private RectTransform promotionMiddleAnchor;
     [SerializeField] private GameObject promotionStarsRoot;
     [SerializeField] private Image[] promotionStars;
+    [SerializeField] private bool centerPromotionStarsOnShow = true;
+    [SerializeField] private Vector2 promotionStarsCenterOffset = Vector2.zero;
     [SerializeField] private Color promotionStarNeutralColor = Color.white;
     [SerializeField] private Color promotionStarSuccessColor = new Color(0.2f, 0.85f, 0.25f);
     [SerializeField] private Color promotionStarFailColor = new Color(0.95f, 0.2f, 0.2f);
     [SerializeField] private float promotionStarShakeSeconds = 0.4f;
     [SerializeField] private float promotionStarShakeStrength = 12f;
     [SerializeField] private float promotionDecisionDelaySeconds = 0.35f;
+
+    [Header("Promotion Decision Coins")]
+    [SerializeField] private GameObject promotionCoinsRoot;
+    [SerializeField] private TMP_Text promotionCoinsText;
+    [SerializeField] private string promotionCoinsFormat = "Coins: {0}";
+    [SerializeField] private Vector2 promotionCoinsOffset = new Vector2(0f, -70f);
 
     [Header("Star")]
     [SerializeField] private Sprite starEmptySprite;
@@ -60,6 +69,19 @@ public class DayEndSummaryUI : MonoBehaviour
     private int lastSummaryDay = -1;
 
     private bool waitingForPromotionDecision = false;
+
+    private RectLayoutState promotionStarsLayoutState;
+    private bool promotionStarsLayoutCaptured;
+    private RectLayoutState promotionCoinsLayoutState;
+    private bool promotionCoinsLayoutCaptured;
+
+    private struct RectLayoutState
+    {
+        public Vector2 anchorMin;
+        public Vector2 anchorMax;
+        public Vector2 pivot;
+        public Vector2 anchoredPosition;
+    }
 
     private void Awake()
     {
@@ -87,7 +109,9 @@ public class DayEndSummaryUI : MonoBehaviour
         if (continueButton != null)
             continueButton.onClick.AddListener(OnContinuePressed);
 
+        TryAutoBindPromotionStars();
         ShowPromotionStars(false);
+        ShowPromotionCoins(false);
     }
 
     private void OnEnable()
@@ -95,10 +119,13 @@ public class DayEndSummaryUI : MonoBehaviour
         if (dayCycle != null)
             dayCycle.DayEnded += HandleDayEnded;
 
+        TryAutoBindPromotionStars();
+
         // Just hide visuals (don't touch timeScale here)
         HideRoot();
         HidePanel(promotionScreen, promotionCanvasGroup);
         HidePanel(firedScreen, firedCanvasGroup);
+        ShowPromotionCoins(false);
     }
 
     private void OnDisable()
@@ -149,7 +176,9 @@ public class DayEndSummaryUI : MonoBehaviour
     {
         waitingForPromotionDecision = isFinalDay && dayNumber == promotionDay;
         RefreshPromotionStars();
+        RefreshPromotionCoins();
         ShowPromotionStars(waitingForPromotionDecision);
+        ShowPromotionCoins(waitingForPromotionDecision);
 
         if (continueButton == null) return;
 
@@ -185,6 +214,8 @@ public class DayEndSummaryUI : MonoBehaviour
 
         if (continueButton != null)
             continueButton.interactable = false;
+
+        RefreshPromotionCoins();
         AnimatePromotionStars(promoted);
 
         float waitSeconds = Mathf.Max(0f, promotionStarShakeSeconds + promotionDecisionDelaySeconds);
@@ -311,6 +342,7 @@ public class DayEndSummaryUI : MonoBehaviour
     {
         HideRoot();
         ShowPromotionStars(false);
+        ShowPromotionCoins(false);
         Time.timeScale = previousTimeScale;
     }
 
@@ -372,6 +404,7 @@ public class DayEndSummaryUI : MonoBehaviour
 
     private void RefreshPromotionStars()
     {
+        TryAutoBindPromotionStars();
         if (promotionStars == null || promotionStars.Length == 0) return;
 
         int rep = reputation == null ? 0 : Mathf.Max(0, reputation.Reputation);
@@ -390,8 +423,164 @@ public class DayEndSummaryUI : MonoBehaviour
 
     private void ShowPromotionStars(bool shouldShow)
     {
-        if (promotionStarsRoot != null)
+        bool isInternalObject = IsPromotionObjectUnderSummaryRoot(promotionStarsRoot);
+
+        if (shouldShow)
+            PositionPromotionDecisionUI();
+        else
+            RestorePromotionStarsLayout();
+
+        if (promotionStarsRoot != null && isInternalObject)
             promotionStarsRoot.SetActive(shouldShow);
+    }
+
+    private void ShowPromotionCoins(bool shouldShow)
+    {
+        bool isInternalObject = IsPromotionObjectUnderSummaryRoot(promotionCoinsRoot);
+
+        if (shouldShow)
+            PositionPromotionDecisionUI();
+        else
+            RestorePromotionCoinsLayout();
+
+        if (promotionCoinsRoot != null && isInternalObject)
+            promotionCoinsRoot.SetActive(shouldShow);
+    }
+
+    private void TryAutoBindPromotionStars()
+    {
+        if (promotionStarsRoot == null) return;
+        if (promotionStars != null && promotionStars.Length > 0) return;
+
+        promotionStars = promotionStarsRoot.GetComponentsInChildren<Image>(true);
+    }
+
+    private void PositionPromotionDecisionUI()
+    {
+        CenterPromotionStars();
+        PositionPromotionCoins();
+    }
+
+    private void CenterPromotionStars()
+    {
+        if (!centerPromotionStarsOnShow) return;
+        if (promotionStarsRoot == null) return;
+
+        RectTransform rect = promotionStarsRoot.GetComponent<RectTransform>();
+        if (rect == null) return;
+
+        SetRectToMiddleAnchor(rect, promotionStarsCenterOffset, ref promotionStarsLayoutState, ref promotionStarsLayoutCaptured);
+    }
+
+    private void PositionPromotionCoins()
+    {
+        if (promotionCoinsRoot == null) return;
+
+        RectTransform rect = promotionCoinsRoot.GetComponent<RectTransform>();
+        if (rect == null) return;
+
+        SetRectToMiddleAnchor(rect, promotionCoinsOffset, ref promotionCoinsLayoutState, ref promotionCoinsLayoutCaptured);
+    }
+
+    private void RefreshPromotionCoins()
+    {
+        if (promotionCoinsText == null) return;
+
+        int coins = coinWallet == null ? 0 : coinWallet.Coins;
+        promotionCoinsText.text = string.Format(promotionCoinsFormat, coins);
+    }
+
+    private void SetRectToMiddleAnchor(RectTransform targetRect, Vector2 offset, ref RectLayoutState layoutState, ref bool layoutCaptured)
+    {
+        if (targetRect == null) return;
+
+        if (!layoutCaptured)
+        {
+            layoutState = CaptureLayoutState(targetRect);
+            layoutCaptured = true;
+        }
+
+        targetRect.anchorMin = new Vector2(0.5f, 0.5f);
+        targetRect.anchorMax = new Vector2(0.5f, 0.5f);
+        targetRect.pivot = new Vector2(0.5f, 0.5f);
+
+        if (promotionMiddleAnchor == null)
+        {
+            targetRect.anchoredPosition = offset;
+            return;
+        }
+
+        RectTransform parentRect = targetRect.parent as RectTransform;
+        if (parentRect == null)
+        {
+            targetRect.anchoredPosition = offset;
+            return;
+        }
+
+        Camera uiCamera = null;
+        Canvas canvas = targetRect.GetComponentInParent<Canvas>();
+        if (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay)
+            uiCamera = canvas.worldCamera;
+
+        Vector2 screenPoint = RectTransformUtility.WorldToScreenPoint(uiCamera, promotionMiddleAnchor.position);
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(parentRect, screenPoint, uiCamera, out Vector2 localPoint))
+        {
+            targetRect.anchoredPosition = localPoint + offset;
+            return;
+        }
+
+        targetRect.anchoredPosition = offset;
+    }
+
+    private bool IsPromotionObjectUnderSummaryRoot(GameObject obj)
+    {
+        if (obj == null) return false;
+        if (root == null) return true;
+
+        Transform rootTransform = root.transform;
+        Transform objTransform = obj.transform;
+        return objTransform == rootTransform || objTransform.IsChildOf(rootTransform);
+    }
+
+    private RectLayoutState CaptureLayoutState(RectTransform rect)
+    {
+        RectLayoutState state = new RectLayoutState
+        {
+            anchorMin = rect.anchorMin,
+            anchorMax = rect.anchorMax,
+            pivot = rect.pivot,
+            anchoredPosition = rect.anchoredPosition
+        };
+
+        return state;
+    }
+
+    private void RestorePromotionStarsLayout()
+    {
+        if (!promotionStarsLayoutCaptured || promotionStarsRoot == null) return;
+
+        RectTransform rect = promotionStarsRoot.GetComponent<RectTransform>();
+        if (rect == null) return;
+
+        ApplyLayoutState(rect, promotionStarsLayoutState);
+    }
+
+    private void RestorePromotionCoinsLayout()
+    {
+        if (!promotionCoinsLayoutCaptured || promotionCoinsRoot == null) return;
+
+        RectTransform rect = promotionCoinsRoot.GetComponent<RectTransform>();
+        if (rect == null) return;
+
+        ApplyLayoutState(rect, promotionCoinsLayoutState);
+    }
+
+    private void ApplyLayoutState(RectTransform rect, RectLayoutState state)
+    {
+        rect.anchorMin = state.anchorMin;
+        rect.anchorMax = state.anchorMax;
+        rect.pivot = state.pivot;
+        rect.anchoredPosition = state.anchoredPosition;
     }
 
     private void AnimatePromotionStars(bool promoted)
