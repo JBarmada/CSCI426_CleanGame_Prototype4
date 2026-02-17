@@ -5,6 +5,7 @@ public class PowerupButton : MonoBehaviour
 {
     [Header("Wiring")]
     [SerializeField] private CoinWallet wallet;
+    [SerializeField] private BroomPowerupSystem broomSystem;
     [SerializeField] private Button button;
     [SerializeField] private Image icon;
 
@@ -18,6 +19,7 @@ public class PowerupButton : MonoBehaviour
     private void Awake()
     {
         if (wallet == null) wallet = CoinWallet.Instance != null ? CoinWallet.Instance : FindFirstObjectByType<CoinWallet>();
+        if (broomSystem == null) broomSystem = BroomPowerupSystem.Instance != null ? BroomPowerupSystem.Instance : FindFirstObjectByType<BroomPowerupSystem>();
         if (button == null) button = GetComponent<Button>();
         if (icon == null) icon = GetComponent<Image>();
 
@@ -27,43 +29,63 @@ public class PowerupButton : MonoBehaviour
         if (wallet != null)
             wallet.CoinsChanged += HandleCoinsChanged;
 
+        if (broomSystem != null)
+            broomSystem.OnChanged += Refresh;
+
         Refresh();
     }
 
     private void OnDestroy()
     {
-        if (wallet != null)
-            wallet.CoinsChanged -= HandleCoinsChanged;
+        if (wallet != null) wallet.CoinsChanged -= HandleCoinsChanged;
+        if (broomSystem != null) broomSystem.OnChanged -= Refresh;
     }
 
-    private void HandleCoinsChanged(int _)
-    {
-        Refresh();
-    }
+    private void HandleCoinsChanged(int _) => Refresh();
 
     private void Refresh()
     {
-        if (wallet == null || button == null || icon == null) return;
+        if (wallet == null || button == null || icon == null || broomSystem == null) return;
 
         bool canAfford = wallet.Coins >= broomCost;
-        button.interactable = canAfford;
+        bool hasUses = broomSystem.CanUseToday();
+
+        bool canBuy = canAfford && hasUses;
+        button.interactable = canBuy;
 
         var c = icon.color;
-        c.a = canAfford ? enabledAlpha : disabledAlpha;
+        c.a = canBuy ? enabledAlpha : disabledAlpha;
         icon.color = c;
     }
 
     private void OnClickBuy()
     {
-        if (wallet == null) return;
+        if (wallet == null || broomSystem == null) return;
 
-        if (!wallet.TrySpend(broomCost))
+        // must have remaining uses
+        if (!broomSystem.CanUseToday())
+        {
+            Refresh();
             return;
+        }
 
-        // Optional: immediately dim if you can’t afford again
+        // must be able to pay
+        if (!wallet.TrySpend(broomCost))
+        {
+            Refresh();
+            return;
+        }
+
+        // consume one daily use (activates +15% speed effect)
+        if (!broomSystem.TryConsumeUse())
+        {
+            // edge case: day rollover or race; refund if you want
+            wallet.AddCoins(broomCost);
+            Refresh();
+            return;
+        }
+
+        Debug.Log($"Broom powerup used! Uses today: {broomSystem.UsesToday}. Multiplier now: {broomSystem.CurrentMultiplier:F2}x");
         Refresh();
-
-        // ✅ Trigger your actual broom powerup here
-        Debug.Log("Broom powerup purchased!");
     }
 }

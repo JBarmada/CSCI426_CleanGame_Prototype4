@@ -3271,6 +3271,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PowerupButton
   wallet: {fileID: 1365000191}
+  broomSystem: {fileID: 0}
   button: {fileID: 1460187588}
   icon: {fileID: 1460187586}
   broomCost: 5
