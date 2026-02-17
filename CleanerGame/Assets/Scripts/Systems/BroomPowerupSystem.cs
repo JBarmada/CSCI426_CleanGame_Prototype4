@@ -19,10 +19,12 @@ public class BroomPowerupSystem : MonoBehaviour
     [SerializeField] private int debugUsesToday;
     [SerializeField] private int debugUsesLeft;
     [SerializeField] private float debugCurrentMultiplier;
+    [SerializeField] private int debugTotalUses;
 
     public event Action OnChanged;
 
     private int usesToday;
+    private int totalUses;
 
     public int UsesToday => usesToday;
     public int UsesLeftToday => Mathf.Max(0, maxUsesPerDay - usesToday);
@@ -31,9 +33,9 @@ public class BroomPowerupSystem : MonoBehaviour
     {
         get
         {
-            if (usesToday <= 0) return 1f;
+            if (totalUses <= 0) return 1f;
             if (!stackUses) return speedMultiplierPerUse;
-            return Mathf.Pow(speedMultiplierPerUse, usesToday); // ✅ stacks: 1.15^uses
+            return Mathf.Pow(speedMultiplierPerUse, totalUses); // ✅ stacks: 1.15^uses
         }
     }
 
@@ -53,6 +55,7 @@ public class BroomPowerupSystem : MonoBehaviour
 
         // initialize for current day
         usesToday = 0;
+        totalUses = 0;
         UpdateDebug();
         OnChanged?.Invoke();
     }
@@ -65,7 +68,7 @@ public class BroomPowerupSystem : MonoBehaviour
 
     private void HandleDayStarted(int newDayCount)
     {
-        usesToday = 0;              // ✅ reset uses each restaurant day
+        usesToday = 0;              // ✅ reset daily purchase limit only
         UpdateDebug();
         OnChanged?.Invoke();
         Debug.Log($"[BroomPowerup] New day {newDayCount} -> uses reset.");
@@ -81,9 +84,10 @@ public class BroomPowerupSystem : MonoBehaviour
         if (!CanUseToday()) return false;
 
         usesToday++;
+        totalUses++;
         UpdateDebug();
         OnChanged?.Invoke();
-        Debug.Log($"[BroomPowerup] Used {usesToday}/{maxUsesPerDay}. Mult={CurrentMultiplier:F2}x");
+        Debug.Log($"[BroomPowerup] Used {usesToday}/{maxUsesPerDay} today, total {totalUses}. Mult={CurrentMultiplier:F2}x");
         return true;
     }
 
@@ -92,5 +96,6 @@ public class BroomPowerupSystem : MonoBehaviour
         debugUsesToday = usesToday;
         debugUsesLeft = UsesLeftToday;
         debugCurrentMultiplier = CurrentMultiplier;
+        debugTotalUses = totalUses;
     }
 }
