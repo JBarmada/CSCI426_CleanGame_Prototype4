@@ -5783,6 +5783,10 @@ MonoBehaviour:
   salaryBonusText: {fileID: 714652745}
   reputationStar: {fileID: 746425265}
   continueButton: {fileID: 895718955}
+  promotionScreen: {fileID: 197413809}
+  firedScreen: {fileID: 1716659883}
+  promotionDay: 3
+  coinsRequiredToPromote: 25
   starEmptySprite: {fileID: 21300050, guid: 1eaee135ce037439d925cee5e41ce026, type: 3}
   starFullSprite: {fileID: 21300048, guid: 1eaee135ce037439d925cee5e41ce026, type: 3}
   starInactiveColor: {r: 0, g: 0, b: 0, a: 1}

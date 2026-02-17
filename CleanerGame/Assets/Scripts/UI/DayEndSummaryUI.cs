@@ -21,6 +21,14 @@ public class DayEndSummaryUI : MonoBehaviour
     [SerializeField] private Image reputationStar;
     [SerializeField] private Button continueButton;
 
+    [Header("Promotion End Screens")]
+    [SerializeField] private GameObject promotionScreen;   // assign Promotion Panel (inactive by default)
+    [SerializeField] private GameObject firedScreen;       // assign Fired Panel (inactive by default)
+
+    [Header("Promotion Rules")]
+    [SerializeField] private int promotionDay = 3;
+    [SerializeField] private int coinsRequiredToPromote = 25;
+
     [Header("Star")]
     [SerializeField] private Sprite starEmptySprite;
     [SerializeField] private Sprite starFullSprite;
@@ -38,23 +46,30 @@ public class DayEndSummaryUI : MonoBehaviour
     private float previousTimeScale = 1f;
     private int lastSummaryDay = -1;
 
+    private bool waitingForPromotionDecision = false;
+
     private void Awake()
     {
         if (root == null)
             root = gameObject;
+
         if (canvasGroup == null && root != null)
             canvasGroup = root.GetComponent<CanvasGroup>();
 
         if (dayCycle == null)
             dayCycle = FindFirstObjectByType<RestaurantDayCycle>();
+
         if (restaurantManager == null)
             restaurantManager = RestaurantManager.Instance;
+
         if (reputation == null)
             reputation = FindFirstObjectByType<RestaurantReputation>();
+
         if (spillTracker == null)
             spillTracker = FindFirstObjectByType<RestaurantSpillTracker>();
+
         if (coinWallet == null)
-            coinWallet = FindFirstObjectByType<CoinWallet>();
+            coinWallet = CoinWallet.Instance != null ? CoinWallet.Instance : FindFirstObjectByType<CoinWallet>();
 
         if (continueButton != null)
             continueButton.onClick.AddListener(OnContinuePressed);
@@ -65,7 +80,8 @@ public class DayEndSummaryUI : MonoBehaviour
         if (dayCycle != null)
             dayCycle.DayEnded += HandleDayEnded;
 
-        Hide();
+        // Just hide visuals (don't touch timeScale here)
+        HideRoot();
     }
 
     private void OnDisable()
@@ -87,8 +103,11 @@ public class DayEndSummaryUI : MonoBehaviour
     {
         if (root == null) return;
 
+        // Ensure end screens are hidden when summary shows
+        if (promotionScreen != null) promotionScreen.SetActive(false);
+        if (firedScreen != null) firedScreen.SetActive(false);
+
         float filthTime = restaurantManager == null ? 0f : restaurantManager.GetFilthTimeSeconds();
-        float filthyTime = restaurantManager == null ? 0f : restaurantManager.GetFilthySeconds();
         int spillsCleaned = spillTracker == null ? 0 : spillTracker.SpillsCleaned;
 
         int salaryBonus = CalculateSalaryBonus(filthTime);
@@ -101,9 +120,67 @@ public class DayEndSummaryUI : MonoBehaviour
 
         UpdateUI(spillsCleaned, filthTime, salaryBonus, earnedStar);
 
+        UpdateContinueButtonForDay(dayNumber, isFinalDay);
+
         previousTimeScale = Time.timeScale;
         Time.timeScale = 0f;
+
         ShowRoot();
+    }
+
+    private void UpdateContinueButtonForDay(int dayNumber, bool isFinalDay)
+    {
+        waitingForPromotionDecision = isFinalDay && dayNumber == promotionDay;
+
+        if (continueButton == null) return;
+
+        TMP_Text buttonText = continueButton.GetComponentInChildren<TMP_Text>();
+        if (buttonText == null) return;
+
+        buttonText.text = waitingForPromotionDecision ? "try to promote" : "CONTINUE";
+    }
+
+    private void OnContinuePressed()
+    {
+        // ✅ Final day: DO NOT Hide() first (or you'd hide the end screen too)
+        if (waitingForPromotionDecision)
+        {
+            ResolvePromotionOrFired();
+            return;
+        }
+
+        // Normal days: hide + continue
+        Hide();
+
+        if (dayCycle != null)
+            dayCycle.ContinueToNextDay();
+    }
+
+    private void ResolvePromotionOrFired()
+    {
+        bool promoted = coinWallet != null && coinWallet.Coins >= coinsRequiredToPromote;
+
+        // Hide ONLY the summary panel if you want (optional)
+        // If you want the summary background to disappear, keep this:
+        HideRoot();
+
+        // Keep time paused for end screens (optional)
+        Time.timeScale = 0f;
+
+        if (promoted)
+        {
+            if (promotionScreen != null)
+                promotionScreen.SetActive(true);
+
+            Debug.Log($"[DayEndSummaryUI] PROMOTED ✅ (Coins={coinWallet?.Coins ?? 0}, Required={coinsRequiredToPromote})");
+        }
+        else
+        {
+            if (firedScreen != null)
+                firedScreen.SetActive(true);
+
+            Debug.Log($"[DayEndSummaryUI] FIRED ❌ (Coins={coinWallet?.Coins ?? 0}, Required={coinsRequiredToPromote})");
+        }
     }
 
     private void UpdateUI(int spillsCleaned, float filthTime, int salaryBonus, bool earnedStar)
@@ -135,7 +212,6 @@ public class DayEndSummaryUI : MonoBehaviour
             StopCoroutine(starRoutine);
 
         starRoutine = StartCoroutine(StarPopRoutine());
-
     }
 
     private void PlayStarResultAudio(bool earnedStar)
@@ -198,18 +274,9 @@ public class DayEndSummaryUI : MonoBehaviour
         return Mathf.Clamp(5 - deduction, 0, 5);
     }
 
-    private void OnContinuePressed()
-    {
-        Hide();
-
-        if (dayCycle != null)
-            dayCycle.ContinueToNextDay();
-    }
-
     private void Hide()
     {
         HideRoot();
-
         Time.timeScale = previousTimeScale;
     }
 
