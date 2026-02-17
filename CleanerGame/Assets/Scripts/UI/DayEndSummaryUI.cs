@@ -24,10 +24,13 @@ public class DayEndSummaryUI : MonoBehaviour
     [Header("Promotion End Screens")]
     [SerializeField] private GameObject promotionScreen;   // assign Promotion Panel (inactive by default)
     [SerializeField] private GameObject firedScreen;       // assign Fired Panel (inactive by default)
+    [SerializeField] private CanvasGroup promotionCanvasGroup;
+    [SerializeField] private CanvasGroup firedCanvasGroup;
 
     [Header("Promotion Rules")]
     [SerializeField] private int promotionDay = 3;
     [SerializeField] private int coinsRequiredToPromote = 25;
+    [SerializeField] private int reputationRequiredToPromote = 2;
 
     [Header("Star")]
     [SerializeField] private Sprite starEmptySprite;
@@ -82,6 +85,8 @@ public class DayEndSummaryUI : MonoBehaviour
 
         // Just hide visuals (don't touch timeScale here)
         HideRoot();
+        HidePanel(promotionScreen, promotionCanvasGroup);
+        HidePanel(firedScreen, firedCanvasGroup);
     }
 
     private void OnDisable()
@@ -104,8 +109,8 @@ public class DayEndSummaryUI : MonoBehaviour
         if (root == null) return;
 
         // Ensure end screens are hidden when summary shows
-        if (promotionScreen != null) promotionScreen.SetActive(false);
-        if (firedScreen != null) firedScreen.SetActive(false);
+        HidePanel(promotionScreen, promotionCanvasGroup);
+        HidePanel(firedScreen, firedCanvasGroup);
 
         float filthTime = restaurantManager == null ? 0f : restaurantManager.GetFilthTimeSeconds();
         int spillsCleaned = spillTracker == null ? 0 : spillTracker.SpillsCleaned;
@@ -158,7 +163,9 @@ public class DayEndSummaryUI : MonoBehaviour
 
     private void ResolvePromotionOrFired()
     {
-        bool promoted = coinWallet != null && coinWallet.Coins >= coinsRequiredToPromote;
+        int coins = coinWallet == null ? 0 : coinWallet.Coins;
+        int rep = reputation == null ? 0 : reputation.Reputation;
+        bool promoted = coins >= coinsRequiredToPromote && rep >= reputationRequiredToPromote;
 
         // Hide ONLY the summary panel if you want (optional)
         // If you want the summary background to disappear, keep this:
@@ -169,17 +176,15 @@ public class DayEndSummaryUI : MonoBehaviour
 
         if (promoted)
         {
-            if (promotionScreen != null)
-                promotionScreen.SetActive(true);
+            ShowPanel(promotionScreen, promotionCanvasGroup);
 
-            Debug.Log($"[DayEndSummaryUI] PROMOTED ✅ (Coins={coinWallet?.Coins ?? 0}, Required={coinsRequiredToPromote})");
+            Debug.Log($"[DayEndSummaryUI] PROMOTED ✅ (Coins={coins}/{coinsRequiredToPromote}, Rep={rep}/{reputationRequiredToPromote})");
         }
         else
         {
-            if (firedScreen != null)
-                firedScreen.SetActive(true);
+            ShowPanel(firedScreen, firedCanvasGroup);
 
-            Debug.Log($"[DayEndSummaryUI] FIRED ❌ (Coins={coinWallet?.Coins ?? 0}, Required={coinsRequiredToPromote})");
+            Debug.Log($"[DayEndSummaryUI] FIRED ❌ (Coins={coins}/{coinsRequiredToPromote}, Rep={rep}/{reputationRequiredToPromote})");
         }
     }
 
@@ -306,5 +311,33 @@ public class DayEndSummaryUI : MonoBehaviour
 
         if (root != null && root != gameObject)
             root.SetActive(false);
+    }
+
+    private void ShowPanel(GameObject panel, CanvasGroup group)
+    {
+        if (group != null)
+        {
+            group.alpha = 1f;
+            group.interactable = true;
+            group.blocksRaycasts = true;
+            return;
+        }
+
+        if (panel != null)
+            panel.SetActive(true);
+    }
+
+    private void HidePanel(GameObject panel, CanvasGroup group)
+    {
+        if (group != null)
+        {
+            group.alpha = 0f;
+            group.interactable = false;
+            group.blocksRaycasts = false;
+            return;
+        }
+
+        if (panel != null)
+            panel.SetActive(false);
     }
 }
