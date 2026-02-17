@@ -180,6 +180,13 @@ public class DayEndSummaryUI : MonoBehaviour
         ShowPromotionStars(waitingForPromotionDecision);
         ShowPromotionCoins(waitingForPromotionDecision);
 
+        if (waitingForPromotionDecision)
+        {
+            int rep = reputation == null ? 0 : reputation.Reputation;
+            int coins = coinWallet == null ? 0 : coinWallet.Coins;
+            Debug.Log($"[DayEndSummaryUI] Try-to-promote UI spawned on day {dayNumber}. Rep={rep}, Coins={coins}");
+        }
+
         if (continueButton == null) return;
 
         TMP_Text buttonText = continueButton.GetComponentInChildren<TMP_Text>();
