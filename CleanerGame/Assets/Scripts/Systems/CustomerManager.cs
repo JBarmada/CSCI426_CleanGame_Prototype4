@@ -10,6 +10,7 @@ public class CustomerManager : MonoBehaviour
     [SerializeField] private Transform exitPoint;
     [SerializeField] private float spawnIntervalSeconds = 6f;
     [SerializeField] private int maxActiveCustomers = 2;
+    [SerializeField] private RestaurantManager restaurantManager;
     [Header("Spills")]
     [SerializeField] private SpillSpawner spillSpawner;
 
@@ -25,6 +26,8 @@ public class CustomerManager : MonoBehaviour
     {
         // ✅ Unity 6 replacement for FindObjectsOfType
         chairs = FindObjectsByType<Chair>(FindObjectsSortMode.None);
+        if (restaurantManager == null)
+            restaurantManager = RestaurantManager.Instance;
         StartCoroutine(SpawnLoop());
     }
 
@@ -79,7 +82,12 @@ public class CustomerManager : MonoBehaviour
     private void TrySpawnCustomer()
     {
         if (customerPrefab == null || spawnPoints == null || spawnPoints.Length == 0) return;
-        if (activeCustomers.Count >= maxActiveCustomers) return;
+        int dirtinessCap = restaurantManager == null
+            ? maxActiveCustomers
+            : restaurantManager.GetMaxCustomersForDirtiness();
+
+        int cap = Mathf.Min(maxActiveCustomers, dirtinessCap);
+        if (activeCustomers.Count >= cap) return;
 
         Transform spawnPoint = spawnPoints[Random.Range(0, spawnPoints.Length)];
         Customer customer = Instantiate(customerPrefab, spawnPoint.position, spawnPoint.rotation);
