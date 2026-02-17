@@ -1356,7 +1356,7 @@ MonoBehaviour:
   rushSeconds: 25
   afternoonSeconds: 15
   closingSeconds: 5
-  infiniteDays: 1
+  infiniteDays: 0
   maxDays: 3
   jingleSource: {fileID: 613359822}
   morningJingle: {fileID: 0}
