@@ -128,7 +128,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CustomerPartyAI
   moveSpeed: 2.2
   arrivalDistance: 0.2
-  shuffleSecondsRange: {x: 3, y: 8}
+  shuffleSecondsRange: {x: 6, y: 8}
   disableCustomerComponent: 1
 --- !u!114 &1102676387024030566
 MonoBehaviour:

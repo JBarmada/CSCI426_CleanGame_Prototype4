@@ -265,47 +265,47 @@ public class RestaurantManager : MonoBehaviour
 
     private int GetCleanMaxCustomersCap()
     {
-        return spawnTuning == null ? 12 : spawnTuning.CleanMaxCustomersCap;
+        return spawnTuning == null ? cleanMaxCustomersCap : spawnTuning.CleanMaxCustomersCap;
     }
 
     private int GetLightDirtinessMinSpillCount()
     {
-        return spawnTuning == null ? 1 : spawnTuning.LightDirtinessMinSpillCount;
+        return spawnTuning == null ? lightDirtinessMinSpillCount : spawnTuning.LightDirtinessMinSpillCount;
     }
 
     private int GetMediumDirtinessMinSpillCount()
     {
-        return spawnTuning == null ? 4 : spawnTuning.MediumDirtinessMinSpillCount;
+        return spawnTuning == null ? mediumDirtinessMinSpillCount : spawnTuning.MediumDirtinessMinSpillCount;
     }
 
     private int GetVeryDirtyMinSpillCount()
     {
-        return spawnTuning == null ? 6 : spawnTuning.VeryDirtyMinSpillCount;
+        return spawnTuning == null ? veryDirtyMinSpillCount : spawnTuning.VeryDirtyMinSpillCount;
     }
 
     private int GetFilthyMinSpillCount()
     {
-        return spawnTuning == null ? 7 : spawnTuning.FilthyMinSpillCount;
+        return spawnTuning == null ? filthyMinSpillCount : spawnTuning.FilthyMinSpillCount;
     }
 
     private int GetFilthySpillCountSpan()
     {
-        return spawnTuning == null ? 5 : spawnTuning.FilthySpillCountSpan;
+        return spawnTuning == null ? filthySpillCountSpan : spawnTuning.FilthySpillCountSpan;
     }
 
     private Vector2Int GetLightDirtinessCustomerRange()
     {
-        return spawnTuning == null ? new Vector2Int(8, 10) : spawnTuning.LightDirtinessCustomerRange;
+        return spawnTuning == null ? lightDirtinessCustomerRange : spawnTuning.LightDirtinessCustomerRange;
     }
 
     private Vector2Int GetMediumDirtinessCustomerRange()
     {
-        return spawnTuning == null ? new Vector2Int(4, 6) : spawnTuning.MediumDirtinessCustomerRange;
+        return spawnTuning == null ? mediumDirtinessCustomerRange : spawnTuning.MediumDirtinessCustomerRange;
     }
 
     private Vector2Int GetFilthyDirtinessCustomerRange()
     {
-        return spawnTuning == null ? new Vector2Int(1, 2) : spawnTuning.FilthyDirtinessCustomerRange;
+        return spawnTuning == null ? filthyDirtinessCustomerRange : spawnTuning.FilthyDirtinessCustomerRange;
     }
 
     private int EvaluateRange(Vector2Int range, int value, int min, int max)

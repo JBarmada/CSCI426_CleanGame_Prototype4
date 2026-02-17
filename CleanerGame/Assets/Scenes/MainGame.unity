@@ -2879,7 +2879,7 @@ MonoBehaviour:
   infiniteDays: 0
   maxDays: 3
   pauseBetweenDays: 1
-  spawnTuning: {fileID: 0}
+  spawnTuning: {fileID: 613359827}
   jingleSource: {fileID: 613359822}
   morningJingle: {fileID: 0}
   rushJingle: {fileID: 0}
@@ -2901,7 +2901,7 @@ MonoBehaviour:
   maxUsesPerDay: 2
   speedMultiplierPerUse: 1.15
   stackUses: 1
-  dayCycle: {fileID: 0}
+  dayCycle: {fileID: 613359823}
   debugUsesToday: 0
   debugUsesLeft: 0
   debugCurrentMultiplier: 0
@@ -2932,7 +2932,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RestaurantReputation
   maxReputation: 3
-  spawnTuning: {fileID: 0}
+  spawnTuning: {fileID: 613359827}
 --- !u!114 &613359827
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2967,7 +2967,7 @@ MonoBehaviour:
   lightDirtinessCustomerRange: {x: 9, y: 11}
   mediumDirtinessCustomerRange: {x: 8, y: 10}
   filthyDirtinessCustomerRange: {x: 1, y: 3}
-  dirtyPenaltySeconds: 0
+  dirtyPenaltySeconds: 1
   veryDirtyPenaltySeconds: 2
   filthyPenaltySeconds: 3
 --- !u!114 &613359828
@@ -2987,7 +2987,7 @@ MonoBehaviour:
   maxCoinMultiplier: 3
   restaurantManager: {fileID: 0}
   breakAtOrAboveDirtiness: 2
-  dayCycle: {fileID: 0}
+  dayCycle: {fileID: 613359823}
   resetOnNewDay: 1
   debugComboCount: 0
   debugCurrentMultiplier: 0
