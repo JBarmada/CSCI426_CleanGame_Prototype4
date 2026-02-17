@@ -3,46 +3,60 @@ using UnityEngine;
 [RequireComponent(typeof(Collider))]
 public class SpillManager : MonoBehaviour
 {
-    [Header("Cleaning")]
-    [SerializeField] private KeyCode cleanKey = KeyCode.K;
-    [SerializeField] private int pressesToClean = 3;
+    [Header("Cleaning (Hold to Sweep)")]
+    [SerializeField] private KeyCode sweepKey = KeyCode.Space;
+    [SerializeField] private float sweepsPerSecond = 3f;   // 3 sweep motions / sec
+    [SerializeField] private int sweepsToClean = 3;        // total motions needed (3 @ 3/sec = 1s)
+
+    [Header("Coins")]
+    [SerializeField] private int coinsPerClean = 1;
+    [SerializeField] private CoinWallet coinWallet;
 
     [Header("Fade")]
     [SerializeField] private SpriteRenderer spriteRenderer; // assign, or auto-find
-    [SerializeField] private bool destroyRoot = false; // true if this script is on a child trigger
+    [SerializeField] private bool destroyRoot = false;      // true if this script is on a child trigger
 
     private bool playerInRange;
-    private int pressesRemaining;
+    private float sweepProgress; // counts "motions" continuously
     private Collider col;
+    private bool cleaned;
 
     private void Awake()
     {
-        pressesRemaining = pressesToClean;
-
         col = GetComponent<Collider>();
         col.isTrigger = true;
 
         if (spriteRenderer == null)
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
 
-        UpdateVisual(); // start at full alpha
-        Debug.Log($"[Spill3D] Awake. Trigger={col.isTrigger} Pos={transform.position}");
+        sweepProgress = 0f;
+        UpdateVisual();
     }
 
     private void Update()
     {
         if (!playerInRange) return;
 
-        if (Input.GetKeyDown(cleanKey))
+        // Hold-to-sweep
+        if (Input.GetKey(sweepKey))
         {
-            pressesRemaining--;
-            UpdateVisual();
-
-            Debug.Log($"[Spill3D] Clean progress {pressesToClean - pressesRemaining}/{pressesToClean}");
-
             if (pressesRemaining <= 0)
             {
+                if (!cleaned)
+                {
+                    cleaned = true;
+                    AwardCoins();
+                }
+
                 Debug.Log("[Spill3D] Clean complete -> Destroy");
+                if (destroyRoot && transform.parent != null) Destroy(transform.parent.gameObject);
+                else Destroy(gameObject);
+            }
+            sweepProgress += sweepsPerSecond * Time.deltaTime;
+            UpdateVisual();
+
+            if (sweepProgress >= sweepsToClean)
+            {
                 if (destroyRoot && transform.parent != null) Destroy(transform.parent.gameObject);
                 else Destroy(gameObject);
             }
@@ -51,33 +65,36 @@ public class SpillManager : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log($"[Spill3D] Enter with {other.name} tag={other.tag}");
-
         if (other.CompareTag("Player"))
-        {
             playerInRange = true;
-            Debug.Log("[Spill3D] Player IN RANGE ✅");
-        }
     }
 
     private void OnTriggerExit(Collider other)
     {
-        Debug.Log($"[Spill3D] Exit with {other.name}");
-
         if (other.CompareTag("Player"))
-        {
             playerInRange = false;
-            Debug.Log("[Spill3D] Player OUT OF RANGE ❌");
-        }
     }
 
     private void UpdateVisual()
     {
         if (spriteRenderer == null) return;
 
-        float alpha = Mathf.Clamp01((float)pressesRemaining / pressesToClean);
+        // Full alpha at 0 progress, fades out as progress approaches sweepsToClean
+        float t = Mathf.Clamp01(sweepProgress / sweepsToClean);
+        float alpha = 1f - t;
+
         var c = spriteRenderer.color;
         c.a = alpha;
         spriteRenderer.color = c;
+    }
+    private void AwardCoins()
+    {
+        if (coinsPerClean <= 0) return;
+
+        if (coinWallet == null)
+            coinWallet = FindFirstObjectByType<CoinWallet>();
+
+        if (coinWallet != null)
+            coinWallet.AddCoins(coinsPerClean);
     }
 }
