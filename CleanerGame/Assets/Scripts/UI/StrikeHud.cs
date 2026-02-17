@@ -7,9 +7,9 @@ public class StrikeHud : MonoBehaviour
     [SerializeField] private RestaurantManager restaurantManager;
     [SerializeField] private Image[] strikes;
 
-    [Header("Sprites")]
-    [SerializeField] private Sprite strikeEmpty;
-    [SerializeField] private Sprite strikeFull;
+    [Header("Colors")]
+    [SerializeField] private Color strikeInactiveColor = new Color(0f, 0f, 0f, 1f);
+    [SerializeField] private Color strikeActiveColor = new Color(1f, 0.1f, 0.1f, 1f);
 
     [Header("Animation")]
     [SerializeField] private float popScale = 1.25f;
@@ -54,7 +54,7 @@ public class StrikeHud : MonoBehaviour
         for (int i = 0; i < strikes.Length; i++)
         {
             if (strikes[i] == null) continue;
-            strikes[i].sprite = i < count ? strikeFull : strikeEmpty;
+            strikes[i].color = i < count ? strikeActiveColor : strikeInactiveColor;
         }
 
         if (lastCount >= 0 && count > lastCount)

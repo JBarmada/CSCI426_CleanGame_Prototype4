@@ -4,10 +4,17 @@ public class RestaurantReputation : MonoBehaviour
 {
     [Header("Reputation")]
     [SerializeField] private int maxReputation = 3;
+    [SerializeField] private CustomerSpawnTuning spawnTuning;
 
     public int Reputation => reputation;
 
     private int reputation;
+
+    private void Awake()
+    {
+        if (spawnTuning == null)
+            spawnTuning = FindFirstObjectByType<CustomerSpawnTuning>();
+    }
 
     public bool TryIncreaseReputation()
     {
@@ -18,23 +25,33 @@ public class RestaurantReputation : MonoBehaviour
 
     public int GetCustomerCapForReputation()
     {
-        switch (reputation)
+        if (spawnTuning == null)
         {
-            case 0:
-                return 6;
-            case 1:
-                return 8;
-            case 2:
-                return 9;
-            default:
-                return 12;
+            switch (reputation)
+            {
+                case 0:
+                    return 6;
+                case 1:
+                    return 8;
+                case 2:
+                    return 9;
+                default:
+                    return 12;
+            }
         }
+
+        return spawnTuning.GetReputationCap(reputation);
     }
 
     public float GetSpawnIntervalBonusSeconds()
     {
-        if (reputation <= 0) return 0f;
-        if (reputation == 1) return 1f;
-        return 2f;
+        if (spawnTuning == null)
+        {
+            if (reputation <= 0) return 0f;
+            if (reputation == 1) return 1f;
+            return 2f;
+        }
+
+        return spawnTuning.GetReputationSpawnBonusSeconds(reputation);
     }
 }

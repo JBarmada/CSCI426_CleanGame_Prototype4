@@ -1,5 +1,6 @@
-using UnityEngine;
 using System;
+using UnityEngine;
+using UnityEngine.Serialization;
 
 public class RestaurantManager : MonoBehaviour
 {
@@ -18,31 +19,44 @@ public class RestaurantManager : MonoBehaviour
     public int Popularity { get; private set; }
 
     [Header("Dirtiness Tracking")]
-    [SerializeField] private float dirtinessRefreshSeconds = 1f;
-    [SerializeField] private RestaurantDayCycle dayCycle;
-    [SerializeField] private int filthyLimit = 3;
-    [SerializeField] private bool useBossCutscene = true;
+    [FormerlySerializedAs("dirtinessRefreshSeconds")]
+    [SerializeField] private float dirtinessRefreshIntervalSeconds = 1f;
+    [FormerlySerializedAs("dayCycle")]
+    [SerializeField] private RestaurantDayCycle dayCycleSystem;
+    [FormerlySerializedAs("filthyLimit")]
+    [SerializeField] private int filthyStrikeLimit = 3;
+    [FormerlySerializedAs("useBossCutscene")]
+    [SerializeField] private bool useBossStrikeCutscene = true;
 
     [Header("Customer Caps")]
-    [SerializeField] private int cleanMaxCustomers = 12;
-    [SerializeField] private int someDirtinessMinSpills = 1;
-    [SerializeField] private int mediumDirtinessMinSpills = 4;
-    [SerializeField] private int veryDirtyMinSpills = 6;
-    [SerializeField] private int tooMuchDirtinessMinSpills = 7;
-    [SerializeField] private int tooMuchDirtinessSpan = 5;
-    [SerializeField] private Vector2Int someDirtinessCustomers = new Vector2Int(8, 10);
-    [SerializeField] private Vector2Int mediumDirtinessCustomers = new Vector2Int(4, 6);
-    [SerializeField] private Vector2Int tooMuchDirtinessCustomers = new Vector2Int(1, 2);
+    [FormerlySerializedAs("cleanMaxCustomers")]
+    [SerializeField] private int cleanMaxCustomersCap = 12;
+    [FormerlySerializedAs("someDirtinessMinSpills")]
+    [SerializeField] private int lightDirtinessMinSpillCount = 1;
+    [FormerlySerializedAs("mediumDirtinessMinSpills")]
+    [SerializeField] private int mediumDirtinessMinSpillCount = 4;
+    [FormerlySerializedAs("veryDirtyMinSpills")]
+    [SerializeField] private int veryDirtyMinSpillCount = 6;
+    [FormerlySerializedAs("tooMuchDirtinessMinSpills")]
+    [SerializeField] private int filthyMinSpillCount = 7;
+    [FormerlySerializedAs("tooMuchDirtinessSpan")]
+    [SerializeField] private int filthySpillCountSpan = 5;
+    [FormerlySerializedAs("someDirtinessCustomers")]
+    [SerializeField] private Vector2Int lightDirtinessCustomerRange = new Vector2Int(8, 10);
+    [FormerlySerializedAs("mediumDirtinessCustomers")]
+    [SerializeField] private Vector2Int mediumDirtinessCustomerRange = new Vector2Int(4, 6);
+    [FormerlySerializedAs("tooMuchDirtinessCustomers")]
+    [SerializeField] private Vector2Int filthyDirtinessCustomerRange = new Vector2Int(1, 2);
 
-    private float dirtinessTimer;
-    private int cachedMaxCustomers;
-    private DirtinessLevel currentDirtinessLevel;
-    private DirtinessLevel previousDirtinessLevel;
-    private float veryDirtySeconds;
-    private float filthySeconds;
-    private int filthyCount;
-    private bool gameOverTriggered;
-    private bool pendingFilthyStrike;
+    private float dirtinessRefreshTimer;
+    private int cachedDirtinessMaxCustomers;
+    private DirtinessLevel currentDirtinessTier;
+    private DirtinessLevel previousDirtinessTier;
+    private float veryDirtyDurationSeconds;
+    private float filthyDurationSeconds;
+    private int filthyStrikeCount;
+    private bool gameOverByFilthTriggered;
+    private bool pendingFilthyStrikeCutscene;
 
     public event Action<int> FilthyCountChanged;
     public event Action GameOverByFilth;
@@ -55,10 +69,13 @@ public class RestaurantManager : MonoBehaviour
         else
             Destroy(gameObject);
 
-        if (dayCycle == null)
-            dayCycle = GetComponent<RestaurantDayCycle>();
-        if (dayCycle != null)
-            dayCycle.DayStarted += HandleDayStarted;
+        if (dayCycleSystem == null)
+            dayCycleSystem = GetComponent<RestaurantDayCycle>();
+        if (dayCycleSystem != null)
+            dayCycleSystem.DayStarted += HandleDayStarted;
+
+        if (spawnTuning == null)
+            spawnTuning = FindFirstObjectByType<CustomerSpawnTuning>();
 
         RefreshDirtiness();
     }
@@ -68,17 +85,17 @@ public class RestaurantManager : MonoBehaviour
         float deltaTime = Time.deltaTime;
         AccumulateDirtinessTime(deltaTime);
 
-        dirtinessTimer += deltaTime;
-        if (dirtinessTimer < dirtinessRefreshSeconds) return;
+        dirtinessRefreshTimer += deltaTime;
+        if (dirtinessRefreshTimer < dirtinessRefreshIntervalSeconds) return;
 
-        dirtinessTimer = 0f;
+        dirtinessRefreshTimer = 0f;
         RefreshDirtiness();
     }
 
     private void OnDestroy()
     {
-        if (dayCycle != null)
-            dayCycle.DayStarted -= HandleDayStarted;
+        if (dayCycleSystem != null)
+            dayCycleSystem.DayStarted -= HandleDayStarted;
     }
 
     public void AddDirt(int amount)
@@ -103,75 +120,76 @@ public class RestaurantManager : MonoBehaviour
 
     public int GetMaxCustomersForDirtiness()
     {
-        return cachedMaxCustomers;
+        return cachedDirtinessMaxCustomers;
     }
 
     public DirtinessLevel GetDirtinessLevel()
     {
-        return currentDirtinessLevel;
+        return currentDirtinessTier;
     }
 
     public int GetFilthyCount()
     {
-        return filthyCount;
+        return filthyStrikeCount;
     }
 
     public bool IsFilthyStrikePending()
     {
-        return pendingFilthyStrike;
+        return pendingFilthyStrikeCutscene;
     }
 
     public int GetFilthyLimit()
     {
-        return Mathf.Max(1, filthyLimit);
+        return Mathf.Max(1, filthyStrikeLimit);
     }
 
     public float GetVeryDirtySeconds()
     {
-        return veryDirtySeconds;
+        return veryDirtyDurationSeconds;
     }
 
     public float GetFilthySeconds()
     {
-        return filthySeconds;
+        return filthyDurationSeconds;
     }
 
     public int GetDirtinessLevelIndex()
     {
-        return (int)currentDirtinessLevel;
+        return (int)currentDirtinessTier;
     }
 
     public float GetFilthTimeSeconds()
     {
-        return veryDirtySeconds + filthySeconds;
+        return veryDirtyDurationSeconds + filthyDurationSeconds;
     }
 
     public float GetDirtinessCapMultiplier()
     {
-        if (cleanMaxCustomers <= 0) return 0f;
+        int cleanCap = GetCleanMaxCustomersCap();
+        if (cleanCap <= 0) return 0f;
         float cap = CalculateMaxCustomers(Dirtiness);
-        return Mathf.Clamp01(cap / cleanMaxCustomers);
+        return Mathf.Clamp01(cap / cleanCap);
     }
 
     private void RefreshDirtiness()
     {
         Dirtiness = FindObjectsByType<SpillManager>(FindObjectsSortMode.None).Length;
         Dirtiness = Mathf.Max(Dirtiness, 0);
-        cachedMaxCustomers = CalculateMaxCustomers(Dirtiness);
-        previousDirtinessLevel = currentDirtinessLevel;
-        currentDirtinessLevel = CalculateDirtinessLevel(Dirtiness);
+        cachedDirtinessMaxCustomers = CalculateMaxCustomers(Dirtiness);
+        previousDirtinessTier = currentDirtinessTier;
+        currentDirtinessTier = CalculateDirtinessLevel(Dirtiness);
         CheckFilthyTransition();
     }
 
     private void CheckFilthyTransition()
     {
-        if (currentDirtinessLevel != DirtinessLevel.Filthy) return;
-        if (previousDirtinessLevel == DirtinessLevel.Filthy) return;
+        if (currentDirtinessTier != DirtinessLevel.Filthy) return;
+        if (previousDirtinessTier == DirtinessLevel.Filthy) return;
 
-        if (pendingFilthyStrike) return;
-        pendingFilthyStrike = true;
+        if (pendingFilthyStrikeCutscene) return;
+        pendingFilthyStrikeCutscene = true;
 
-        if (!useBossCutscene || FilthyStrikeTriggered == null)
+        if (!useBossStrikeCutscene || FilthyStrikeTriggered == null)
         {
             ConfirmFilthyStrike();
             return;
@@ -182,15 +200,15 @@ public class RestaurantManager : MonoBehaviour
 
     public void ConfirmFilthyStrike()
     {
-        if (!pendingFilthyStrike) return;
-        pendingFilthyStrike = false;
+        if (!pendingFilthyStrikeCutscene) return;
+        pendingFilthyStrikeCutscene = false;
 
-        filthyCount++;
-        FilthyCountChanged?.Invoke(filthyCount);
+        filthyStrikeCount++;
+        FilthyCountChanged?.Invoke(filthyStrikeCount);
 
-        if (!gameOverTriggered && filthyCount >= Mathf.Max(1, filthyLimit))
+        if (!gameOverByFilthTriggered && filthyStrikeCount >= Mathf.Max(1, filthyStrikeLimit))
         {
-            gameOverTriggered = true;
+            gameOverByFilthTriggered = true;
             GameOverByFilth?.Invoke();
         }
     }
@@ -199,9 +217,9 @@ public class RestaurantManager : MonoBehaviour
     {
         if (dirtiness <= 0) return DirtinessLevel.Clean;
 
-        int veryDirtyMin = Mathf.Clamp(veryDirtyMinSpills, 1, Mathf.Max(1, tooMuchDirtinessMinSpills));
+        int veryDirtyMin = Mathf.Clamp(GetVeryDirtyMinSpillCount(), 1, Mathf.Max(1, GetFilthyMinSpillCount()));
         if (dirtiness < veryDirtyMin) return DirtinessLevel.Dirty;
-        if (dirtiness < tooMuchDirtinessMinSpills) return DirtinessLevel.VeryDirty;
+        if (dirtiness < GetFilthyMinSpillCount()) return DirtinessLevel.VeryDirty;
 
         return DirtinessLevel.Filthy;
     }
@@ -210,10 +228,10 @@ public class RestaurantManager : MonoBehaviour
     {
         if (deltaTime <= 0f) return;
 
-        if (currentDirtinessLevel == DirtinessLevel.VeryDirty)
-            veryDirtySeconds += deltaTime;
-        else if (currentDirtinessLevel == DirtinessLevel.Filthy)
-            filthySeconds += deltaTime;
+        if (currentDirtinessTier == DirtinessLevel.VeryDirty)
+            veryDirtyDurationSeconds += deltaTime;
+        else if (currentDirtinessTier == DirtinessLevel.Filthy)
+            filthyDurationSeconds += deltaTime;
     }
 
     private void HandleDayStarted(int dayNumber)
@@ -223,22 +241,70 @@ public class RestaurantManager : MonoBehaviour
 
     public void ResetFilthTimers()
     {
-        veryDirtySeconds = 0f;
-        filthySeconds = 0f;
+        veryDirtyDurationSeconds = 0f;
+        filthyDurationSeconds = 0f;
     }
 
     private int CalculateMaxCustomers(int dirtiness)
     {
-        if (dirtiness <= 0) return cleanMaxCustomers;
+        if (dirtiness <= 0) return GetCleanMaxCustomersCap();
 
-        if (dirtiness < mediumDirtinessMinSpills)
-            return EvaluateRange(someDirtinessCustomers, dirtiness, someDirtinessMinSpills, mediumDirtinessMinSpills - 1);
+        int mediumMin = GetMediumDirtinessMinSpillCount();
+        int filthyMin = GetFilthyMinSpillCount();
+        int filthyMax = filthyMin + Mathf.Max(1, GetFilthySpillCountSpan());
 
-        if (dirtiness < tooMuchDirtinessMinSpills)
-            return EvaluateRange(mediumDirtinessCustomers, dirtiness, mediumDirtinessMinSpills, tooMuchDirtinessMinSpills - 1);
+        if (dirtiness < mediumMin)
+            return EvaluateRange(GetLightDirtinessCustomerRange(), dirtiness, GetLightDirtinessMinSpillCount(), mediumMin - 1);
 
-        int tooMuchMax = tooMuchDirtinessMinSpills + Mathf.Max(1, tooMuchDirtinessSpan);
-        return EvaluateRange(tooMuchDirtinessCustomers, dirtiness, tooMuchDirtinessMinSpills, tooMuchMax);
+        if (dirtiness < filthyMin)
+            return EvaluateRange(GetMediumDirtinessCustomerRange(), dirtiness, mediumMin, filthyMin - 1);
+
+        return EvaluateRange(GetFilthyDirtinessCustomerRange(), dirtiness, filthyMin, filthyMax);
+    }
+
+    private int GetCleanMaxCustomersCap()
+    {
+        return spawnTuning == null ? 12 : spawnTuning.CleanMaxCustomersCap;
+    }
+
+    private int GetLightDirtinessMinSpillCount()
+    {
+        return spawnTuning == null ? 1 : spawnTuning.LightDirtinessMinSpillCount;
+    }
+
+    private int GetMediumDirtinessMinSpillCount()
+    {
+        return spawnTuning == null ? 4 : spawnTuning.MediumDirtinessMinSpillCount;
+    }
+
+    private int GetVeryDirtyMinSpillCount()
+    {
+        return spawnTuning == null ? 6 : spawnTuning.VeryDirtyMinSpillCount;
+    }
+
+    private int GetFilthyMinSpillCount()
+    {
+        return spawnTuning == null ? 7 : spawnTuning.FilthyMinSpillCount;
+    }
+
+    private int GetFilthySpillCountSpan()
+    {
+        return spawnTuning == null ? 5 : spawnTuning.FilthySpillCountSpan;
+    }
+
+    private Vector2Int GetLightDirtinessCustomerRange()
+    {
+        return spawnTuning == null ? new Vector2Int(8, 10) : spawnTuning.LightDirtinessCustomerRange;
+    }
+
+    private Vector2Int GetMediumDirtinessCustomerRange()
+    {
+        return spawnTuning == null ? new Vector2Int(4, 6) : spawnTuning.MediumDirtinessCustomerRange;
+    }
+
+    private Vector2Int GetFilthyDirtinessCustomerRange()
+    {
+        return spawnTuning == null ? new Vector2Int(1, 2) : spawnTuning.FilthyDirtinessCustomerRange;
     }
 
     private int EvaluateRange(Vector2Int range, int value, int min, int max)

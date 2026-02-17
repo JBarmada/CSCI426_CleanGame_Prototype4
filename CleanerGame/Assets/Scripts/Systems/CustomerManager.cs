@@ -8,8 +8,7 @@ public class CustomerManager : MonoBehaviour
     [SerializeField] private Customer customerPrefab;
     [SerializeField] private Transform[] spawnPoints;
     [SerializeField] private Transform exitPoint;
-    [SerializeField] private float spawnIntervalSeconds = 6f;
-    [SerializeField] private int maxActiveCustomers = 2;
+    [SerializeField] private CustomerSpawnTuning spawnTuning;
     [SerializeField] private RestaurantManager restaurantManager;
     [SerializeField] private RestaurantDayCycle dayCycle;
     [SerializeField] private RestaurantReputation reputation;
@@ -34,6 +33,8 @@ public class CustomerManager : MonoBehaviour
             dayCycle = restaurantManager.GetComponent<RestaurantDayCycle>();
         if (reputation == null)
             reputation = FindFirstObjectByType<RestaurantReputation>();
+        if (spawnTuning == null)
+            spawnTuning = FindFirstObjectByType<CustomerSpawnTuning>();
         StartCoroutine(SpawnLoop());
     }
 
@@ -90,11 +91,12 @@ public class CustomerManager : MonoBehaviour
         if (customerPrefab == null || spawnPoints == null || spawnPoints.Length == 0) return;
         if (dayCycle != null && dayCycle.IsClosed) return;
 
+        int globalMax = spawnTuning == null ? 12 : spawnTuning.MaxActiveCustomers;
         int reputationCap = reputation == null
-            ? maxActiveCustomers
+            ? globalMax
             : reputation.GetCustomerCapForReputation();
 
-        int baseCap = Mathf.Min(maxActiveCustomers, reputationCap);
+        int baseCap = Mathf.Min(globalMax, reputationCap);
         float dirtinessMultiplier = restaurantManager == null
             ? 1f
             : restaurantManager.GetDirtinessCapMultiplier();
@@ -125,12 +127,20 @@ public class CustomerManager : MonoBehaviour
 
     private float GetCurrentSpawnIntervalSeconds()
     {
-        float interval = Mathf.Max(0.1f, spawnIntervalSeconds);
+        float interval = Mathf.Max(0.1f, spawnTuning == null ? 6f : spawnTuning.BaseSpawnIntervalSeconds);
 
         float reputationBonus = reputation == null ? 0f : reputation.GetSpawnIntervalBonusSeconds();
         interval = Mathf.Max(0.1f, interval - reputationBonus);
 
-        int dirtinessPenalty = restaurantManager == null ? 0 : restaurantManager.GetDirtinessLevelIndex();
+        int dirtinessPenalty = 0;
+        if (restaurantManager != null)
+        {
+            if (spawnTuning == null)
+                dirtinessPenalty = restaurantManager.GetDirtinessLevelIndex();
+            else
+                dirtinessPenalty = spawnTuning.GetDirtinessSpawnPenaltySeconds(restaurantManager.GetDirtinessLevel());
+        }
+
         interval = Mathf.Max(0.1f, interval + dirtinessPenalty);
 
         return interval;

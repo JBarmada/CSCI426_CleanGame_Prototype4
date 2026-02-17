@@ -20,6 +20,7 @@ public class RestaurantDayCycle : MonoBehaviour
     [SerializeField] private bool infiniteDays = true;
     [SerializeField] private int maxDays = 3;
     [SerializeField] private bool pauseBetweenDays = true;
+    [SerializeField] private CustomerSpawnTuning spawnTuning;
 
     [Header("Day Jingles")]
     [SerializeField] private AudioSource jingleSource;
@@ -48,6 +49,8 @@ public class RestaurantDayCycle : MonoBehaviour
 
     private void Awake()
     {
+        if (spawnTuning == null)
+            spawnTuning = FindFirstObjectByType<CustomerSpawnTuning>();
         NormalizeDaySegments();
         InitializeDay();
     }
@@ -59,7 +62,15 @@ public class RestaurantDayCycle : MonoBehaviour
 
     public float GetSpawnMultiplier()
     {
-        switch (currentPhase)
+        if (spawnTuning == null)
+            return DefaultSpawnMultiplier(currentPhase);
+
+        return spawnTuning.GetDayMultiplier(currentPhase);
+    }
+
+    private float DefaultSpawnMultiplier(DayPhase phase)
+    {
+        switch (phase)
         {
             case DayPhase.Morning:
                 return 0.25f;
