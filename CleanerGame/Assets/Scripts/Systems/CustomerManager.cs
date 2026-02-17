@@ -6,6 +6,7 @@ public class CustomerManager : MonoBehaviour
 {
     [Header("Spawn")]
     [SerializeField] private Customer customerPrefab;
+    [SerializeField] private CustomerPartyAI partyCustomerPrefab;
     [SerializeField] private Transform[] spawnPoints;
     [SerializeField] private Transform exitPoint;
     [SerializeField] private CustomerSpawnTuning spawnTuning;
@@ -16,12 +17,14 @@ public class CustomerManager : MonoBehaviour
     [SerializeField] private SpillSpawner spillSpawner;
 
     private readonly List<Customer> activeCustomers = new List<Customer>();
+    private readonly List<CustomerPartyAI> partyCustomers = new List<CustomerPartyAI>();
+    private int activeCustomerCount;
     private Chair[] chairs;
 
     // ✅ Use this for your spill spawner
-    public int CustomerCount => activeCustomers.Count;
+    public int CustomerCount => activeCustomerCount;
 
-    public int ActiveCustomerCount => activeCustomers.Count;
+    public int ActiveCustomerCount => activeCustomerCount;
 
     private void Start()
     {
@@ -35,7 +38,17 @@ public class CustomerManager : MonoBehaviour
             reputation = FindFirstObjectByType<RestaurantReputation>();
         if (spawnTuning == null)
             spawnTuning = FindFirstObjectByType<CustomerSpawnTuning>();
+
+        if (dayCycle != null)
+            dayCycle.DayStarted += HandleDayStarted;
+
         StartCoroutine(SpawnLoop());
+    }
+
+    private void OnDestroy()
+    {
+        if (dayCycle != null)
+            dayCycle.DayStarted -= HandleDayStarted;
     }
 
     public Chair GetNearestAvailableChair(Vector3 position)
@@ -73,6 +86,7 @@ public class CustomerManager : MonoBehaviour
     public void DespawnCustomer(Customer customer)
     {
         activeCustomers.Remove(customer);
+        activeCustomerCount = Mathf.Max(0, activeCustomerCount - 1);
         Destroy(customer.gameObject);
     }
 
@@ -107,6 +121,17 @@ public class CustomerManager : MonoBehaviour
         if (activeCustomers.Count >= cap) return;
 
         Transform spawnPoint = spawnPoints[Random.Range(0, spawnPoints.Length)];
+        bool isPartyDay = dayCycle != null && dayCycle.DayCount == 2;
+
+        if (isPartyDay && partyCustomerPrefab != null)
+        {
+            CustomerPartyAI partyCustomer = Instantiate(partyCustomerPrefab, spawnPoint.position, spawnPoint.rotation);
+            partyCustomer.Initialize(this);
+            partyCustomers.Add(partyCustomer);
+            activeCustomerCount++;
+            return;
+        }
+
         Customer customer = Instantiate(customerPrefab, spawnPoint.position, spawnPoint.rotation);
         customer.Initialize(this);
 
@@ -117,6 +142,7 @@ public class CustomerManager : MonoBehaviour
         }
 
         activeCustomers.Add(customer);
+        activeCustomerCount++;
     }
     public void OnCustomerLeftChair(Vector3 chairPos)
 {
@@ -144,6 +170,22 @@ public class CustomerManager : MonoBehaviour
         interval = Mathf.Max(0.1f, interval + dirtinessPenalty);
 
         return interval;
+    }
+
+    private void HandleDayStarted(int dayNumber)
+    {
+        if (dayNumber == 2) return;
+
+        if (partyCustomers.Count == 0) return;
+
+        for (int i = partyCustomers.Count - 1; i >= 0; i--)
+        {
+            if (partyCustomers[i] == null) continue;
+            Destroy(partyCustomers[i].gameObject);
+            activeCustomerCount = Mathf.Max(0, activeCustomerCount - 1);
+        }
+
+        partyCustomers.Clear();
     }
 
 }
