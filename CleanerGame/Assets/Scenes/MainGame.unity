@@ -2861,6 +2861,7 @@ GameObject:
   - component: {fileID: 1460187588}
   - component: {fileID: 1460187587}
   - component: {fileID: 1460187586}
+  - component: {fileID: 1460187589}
   m_Layer: 5
   m_Name: Broom Powerup Button
   m_TagString: Untagged
@@ -2969,6 +2970,24 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &1460187589
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1460187584}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de0d14d5d58764d19aa542b7c2c12e8a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PowerupButton
+  wallet: {fileID: 1365000191}
+  button: {fileID: 1460187588}
+  icon: {fileID: 1460187586}
+  broomCost: 5
+  disabledAlpha: 0.25
+  enabledAlpha: 1
 --- !u!1 &1565017330
 GameObject:
   m_ObjectHideFlags: 0
