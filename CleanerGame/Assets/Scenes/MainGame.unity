@@ -1760,6 +1760,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CustomerManager
   customerPrefab: {fileID: 5083530477836114688, guid: 5f5221dbae4ae084e91f5d12d931f08c, type: 3}
+  partyCustomerPrefab: {fileID: 0}
   spawnPoints:
   - {fileID: 1140798791}
   exitPoint: {fileID: 1140798791}
@@ -5708,6 +5709,7 @@ GameObject:
   - component: {fileID: 1170074504}
   - component: {fileID: 1170074506}
   - component: {fileID: 1170074505}
+  - component: {fileID: 1170074507}
   m_Layer: 5
   m_Name: 'Combo Text '
   m_TagString: Untagged
@@ -5834,6 +5836,25 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1170074503}
   m_CullTransparentMesh: 1
+--- !u!114 &1170074507
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1170074503}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b41775a6155d24c238d2bb6ee80be1c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ComboHud
+  comboText: {fileID: 1170074505}
+  comboSystem: {fileID: 613359828}
+  idleText: 
+  comboFormat: 'Combo x{0} '
+  timerSuffixFormat: ' ({0:0.0}s)'
+  showTimer: 1
+  refreshSeconds: 0.1
 --- !u!1 &1224641067
 GameObject:
   m_ObjectHideFlags: 0

@@ -9,9 +9,7 @@ public class ComboHud : MonoBehaviour
 
     [Header("Text")]
     [SerializeField] private string idleText = string.Empty;
-    [SerializeField] private string comboFormat = "Combo x{0}  Coins x{1:0.00}";
-    [SerializeField] private string timerSuffixFormat = " ({0:0.0}s)";
-    [SerializeField] private bool showTimer = true;
+    [SerializeField] private string comboFormat = "Combo x{0}";
 
     [Header("Refresh")]
     [SerializeField] private float refreshSeconds = 0.1f;
@@ -79,10 +77,7 @@ public class ComboHud : MonoBehaviour
             return;
         }
 
-        string text = string.Format(comboFormat, comboSystem.ComboCount, comboSystem.CurrentCoinMultiplier);
-        if (showTimer)
-            text += string.Format(timerSuffixFormat, comboSystem.RemainingComboSeconds);
-
+        string text = string.Format(comboFormat, comboSystem.ComboCount);
         comboText.text = text;
     }
 }
