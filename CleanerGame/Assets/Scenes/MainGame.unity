@@ -891,6 +891,7 @@ MonoBehaviour:
   exitPoint: {fileID: 1140798791}
   spawnIntervalSeconds: 2
   maxActiveCustomers: 12
+  spillSpawner: {fileID: 613359821}
 --- !u!4 &461730724
 Transform:
   m_ObjectHideFlags: 0
@@ -1050,18 +1051,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SpillSpawner
   spillPrefab: {fileID: 2547957640469633045, guid: 291b2321874ff4d4a94e11bf7e18511d, type: 3}
-  tables:
-  - {fileID: 1109788439}
-  - {fileID: 513788644}
-  - {fileID: 1132978822}
-  - {fileID: 2142488512}
-  - {fileID: 1810826749}
-  - {fileID: 223149652}
-  - {fileID: 2138073265}
-  customerManager: {fileID: 461730723}
-  minCustomersToSpawn: 3
-  baseSecondsPerSpill: 10
-  maxSpillsPerSecond: 0.25
   maxActiveSpills: 10
   innerRing: 1.2
   outerRing: 2.4
