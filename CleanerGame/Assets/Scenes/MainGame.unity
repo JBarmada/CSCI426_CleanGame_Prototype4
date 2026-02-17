@@ -1885,7 +1885,7 @@ MonoBehaviour:
     m_Bits: 4294967295
   blockMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 64
   raycastHeight: 6
   yOffset: 0.01
   spillHalfExtents: 0.35
