@@ -2707,8 +2707,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1fed474302290aa45b244f41611f00f0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CustomerSpawnTuning
-  baseSpawnIntervalSeconds: 2
-  maxActiveCustomers: 16
+  baseSpawnIntervalSeconds: 2.5
+  maxActiveCustomers: 14
   morningMultiplier: 0.35
   rushMultiplier: 1.75
   afternoonMultiplier: 0.5
@@ -2717,7 +2717,7 @@ MonoBehaviour:
   reputation1Cap: 8
   reputation2Cap: 12
   reputation3Cap: 12
-  reputation1SpawnBonus: 2
+  reputation1SpawnBonus: 1
   reputation2SpawnBonus: 1
   reputation3SpawnBonus: 2
   lightDirtinessMinSpillCount: 1
