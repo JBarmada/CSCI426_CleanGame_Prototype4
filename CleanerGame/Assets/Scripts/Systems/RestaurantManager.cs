@@ -18,6 +18,7 @@ public class RestaurantManager : MonoBehaviour
 
     [Header("Dirtiness Tracking")]
     [SerializeField] private float dirtinessRefreshSeconds = 1f;
+    [SerializeField] private RestaurantDayCycle dayCycle;
 
     [Header("Customer Caps")]
     [SerializeField] private int cleanMaxCustomers = 12;
@@ -43,6 +44,11 @@ public class RestaurantManager : MonoBehaviour
         else
             Destroy(gameObject);
 
+        if (dayCycle == null)
+            dayCycle = GetComponent<RestaurantDayCycle>();
+        if (dayCycle != null)
+            dayCycle.DayStarted += HandleDayStarted;
+
         RefreshDirtiness();
     }
 
@@ -56,6 +62,12 @@ public class RestaurantManager : MonoBehaviour
 
         dirtinessTimer = 0f;
         RefreshDirtiness();
+    }
+
+    private void OnDestroy()
+    {
+        if (dayCycle != null)
+            dayCycle.DayStarted -= HandleDayStarted;
     }
 
     public void AddDirt(int amount)
@@ -98,6 +110,23 @@ public class RestaurantManager : MonoBehaviour
         return filthySeconds;
     }
 
+    public int GetDirtinessLevelIndex()
+    {
+        return (int)currentDirtinessLevel;
+    }
+
+    public float GetFilthTimeSeconds()
+    {
+        return veryDirtySeconds + filthySeconds;
+    }
+
+    public float GetDirtinessCapMultiplier()
+    {
+        if (cleanMaxCustomers <= 0) return 0f;
+        float cap = CalculateMaxCustomers(Dirtiness);
+        return Mathf.Clamp01(cap / cleanMaxCustomers);
+    }
+
     private void RefreshDirtiness()
     {
         Dirtiness = FindObjectsByType<SpillManager>(FindObjectsSortMode.None).Length;
@@ -125,6 +154,17 @@ public class RestaurantManager : MonoBehaviour
             veryDirtySeconds += deltaTime;
         else if (currentDirtinessLevel == DirtinessLevel.Filthy)
             filthySeconds += deltaTime;
+    }
+
+    private void HandleDayStarted(int dayNumber)
+    {
+        ResetFilthTimers();
+    }
+
+    public void ResetFilthTimers()
+    {
+        veryDirtySeconds = 0f;
+        filthySeconds = 0f;
     }
 
     private int CalculateMaxCustomers(int dirtiness)

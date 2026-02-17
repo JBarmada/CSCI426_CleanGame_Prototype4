@@ -1,5 +1,5 @@
-using UnityEngine;
 using System;
+using UnityEngine;
 
 public class RestaurantDayCycle : MonoBehaviour
 {
@@ -19,6 +19,7 @@ public class RestaurantDayCycle : MonoBehaviour
     [SerializeField] private float closingSeconds = 5f;
     [SerializeField] private bool infiniteDays = true;
     [SerializeField] private int maxDays = 3;
+    [SerializeField] private bool pauseBetweenDays = true;
 
     [Header("Day Jingles")]
     [SerializeField] private AudioSource jingleSource;
@@ -33,14 +34,17 @@ public class RestaurantDayCycle : MonoBehaviour
     private int dayCount;
     private DayPhase currentPhase;
     private bool gameOver;
+    private bool waitingForContinue;
 
-    // =========================
-    // ✅ NEW: Public API
-    // =========================
     public int DayCount => dayCount;
+    public bool IsClosed => currentPhase == DayPhase.Closing || gameOver;
+    public bool IsGameOver => gameOver;
+    public bool IsWaitingForContinue => waitingForContinue;
+    public bool InfiniteDays => infiniteDays;
 
     public event Action<DayPhase> PhaseChanged;
-    public event Action<int> DayStarted;   // fires at start of each restaurant day
+    public event Action<int> DayStarted;
+    public event Action<int, bool> DayEnded;
 
     private void Awake()
     {
@@ -68,26 +72,32 @@ public class RestaurantDayCycle : MonoBehaviour
         }
     }
 
-    public bool IsClosed => currentPhase == DayPhase.Closing || gameOver;
+    public DayPhase GetPhase()
+    {
+        return currentPhase;
+    }
 
-    public DayPhase GetPhase() => currentPhase;
+    public bool ContinueToNextDay()
+    {
+        if (!waitingForContinue || gameOver) return false;
 
-    // =========================
-    // Day lifecycle
-    // =========================
+        waitingForContinue = false;
+        StartNextDay();
+        return true;
+    }
 
     private void InitializeDay()
     {
         dayTimer = 0f;
         dayCount = 1;
+        waitingForContinue = false;
         SetPhase(DayPhase.Morning);
-
-        DayStarted?.Invoke(dayCount);   // ✅ fire day 1
+        DayStarted?.Invoke(dayCount);
     }
 
     private void UpdateDayCycle(float deltaTime)
     {
-        if (gameOver) return;
+        if (gameOver || waitingForContinue) return;
 
         dayTimer += deltaTime;
 
@@ -97,20 +107,42 @@ public class RestaurantDayCycle : MonoBehaviour
 
         if (dayTimer >= dayLengthSeconds)
         {
-            dayTimer = 0f;
-            dayCount++;
-
-            if (!infiniteDays && dayCount > Mathf.Max(1, maxDays))
+            if (infiniteDays)
             {
-                gameOver = true;
-                SetPhase(DayPhase.Closing);
-                Debug.Log("[DayCycle] Game over - no more days.");
-                return;
+                StartNextDay();
             }
-
-            SetPhase(DayPhase.Morning);
-            DayStarted?.Invoke(dayCount);   // ✅ fire new restaurant day
+            else
+            {
+                EndDay();
+            }
         }
+    }
+
+    private void StartNextDay()
+    {
+        dayTimer = 0f;
+        dayCount++;
+        SetPhase(DayPhase.Morning);
+        DayStarted?.Invoke(dayCount);
+    }
+
+    private void EndDay()
+    {
+        dayTimer = dayLengthSeconds;
+        bool isFinalDay = dayCount >= Mathf.Max(1, maxDays);
+        if (isFinalDay)
+            gameOver = true;
+
+        SetPhase(DayPhase.Closing);
+        DayEnded?.Invoke(dayCount, isFinalDay);
+
+        if (pauseBetweenDays)
+            waitingForContinue = true;
+        else if (!isFinalDay)
+            StartNextDay();
+
+        if (isFinalDay)
+            Debug.Log("[DayCycle] Game over - no more days.");
     }
 
     private void SetPhase(DayPhase phase)
@@ -134,10 +166,6 @@ public class RestaurantDayCycle : MonoBehaviour
 
         return DayPhase.Closing;
     }
-
-    // =========================
-    // Audio / feedback
-    // =========================
 
     private void AnnouncePhase(DayPhase phase)
     {
@@ -176,20 +204,13 @@ public class RestaurantDayCycle : MonoBehaviour
         jingleSource.PlayOneShot(clip, jingleVolume);
     }
 
-    // =========================
-    // Utilities
-    // =========================
-
     private void NormalizeDaySegments()
     {
         if (dayLengthSeconds <= 0f)
             dayLengthSeconds = 60f;
 
-        float total =
-            Mathf.Max(0f, morningSeconds) +
-            Mathf.Max(0f, rushSeconds) +
-            Mathf.Max(0f, afternoonSeconds) +
-            Mathf.Max(0f, closingSeconds);
+        float total = Mathf.Max(0f, morningSeconds) + Mathf.Max(0f, rushSeconds)
+            + Mathf.Max(0f, afternoonSeconds) + Mathf.Max(0f, closingSeconds);
 
         if (total <= 0f)
         {

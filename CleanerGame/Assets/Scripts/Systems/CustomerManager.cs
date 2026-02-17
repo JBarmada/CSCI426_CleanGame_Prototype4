@@ -12,6 +12,7 @@ public class CustomerManager : MonoBehaviour
     [SerializeField] private int maxActiveCustomers = 2;
     [SerializeField] private RestaurantManager restaurantManager;
     [SerializeField] private RestaurantDayCycle dayCycle;
+    [SerializeField] private RestaurantReputation reputation;
     [Header("Spills")]
     [SerializeField] private SpillSpawner spillSpawner;
 
@@ -31,6 +32,8 @@ public class CustomerManager : MonoBehaviour
             restaurantManager = RestaurantManager.Instance;
         if (dayCycle == null && restaurantManager != null)
             dayCycle = restaurantManager.GetComponent<RestaurantDayCycle>();
+        if (reputation == null)
+            reputation = FindFirstObjectByType<RestaurantReputation>();
         StartCoroutine(SpawnLoop());
     }
 
@@ -74,11 +77,11 @@ public class CustomerManager : MonoBehaviour
 
     private IEnumerator SpawnLoop()
     {
-        var wait = new WaitForSeconds(spawnIntervalSeconds);
         while (true)
         {
             TrySpawnCustomer();
-            yield return wait;
+            float waitSeconds = GetCurrentSpawnIntervalSeconds();
+            yield return new WaitForSeconds(waitSeconds);
         }
     }
 
@@ -87,13 +90,18 @@ public class CustomerManager : MonoBehaviour
         if (customerPrefab == null || spawnPoints == null || spawnPoints.Length == 0) return;
         if (dayCycle != null && dayCycle.IsClosed) return;
 
-        int dirtinessCap = restaurantManager == null
+        int reputationCap = reputation == null
             ? maxActiveCustomers
-            : restaurantManager.GetMaxCustomersForDirtiness();
+            : reputation.GetCustomerCapForReputation();
 
-        int baseCap = Mathf.Min(maxActiveCustomers, dirtinessCap);
+        int baseCap = Mathf.Min(maxActiveCustomers, reputationCap);
+        float dirtinessMultiplier = restaurantManager == null
+            ? 1f
+            : restaurantManager.GetDirtinessCapMultiplier();
+        int dirtinessAdjustedCap = Mathf.FloorToInt(baseCap * dirtinessMultiplier);
+
         float dayMultiplier = dayCycle == null ? 1f : dayCycle.GetSpawnMultiplier();
-        int cap = Mathf.Max(0, Mathf.FloorToInt(baseCap * dayMultiplier));
+        int cap = Mathf.Max(0, Mathf.FloorToInt(dirtinessAdjustedCap * dayMultiplier));
         if (activeCustomers.Count >= cap) return;
 
         Transform spawnPoint = spawnPoints[Random.Range(0, spawnPoints.Length)];
@@ -114,5 +122,18 @@ public class CustomerManager : MonoBehaviour
 
     spillSpawner.TrySpawnSpillNearChair(chairPos);
 }
+
+    private float GetCurrentSpawnIntervalSeconds()
+    {
+        float interval = Mathf.Max(0.1f, spawnIntervalSeconds);
+
+        float reputationBonus = reputation == null ? 0f : reputation.GetSpawnIntervalBonusSeconds();
+        interval = Mathf.Max(0.1f, interval - reputationBonus);
+
+        int dirtinessPenalty = restaurantManager == null ? 0 : restaurantManager.GetDirtinessLevelIndex();
+        interval = Mathf.Max(0.1f, interval + dirtinessPenalty);
+
+        return interval;
+    }
 
 }
