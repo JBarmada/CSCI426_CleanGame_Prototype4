@@ -4,6 +4,13 @@ public class RestaurantManager : MonoBehaviour
 {
     public static RestaurantManager Instance;
 
+    public enum DirtinessLevel
+    {
+        Clean,
+        Dirty,
+        Filthy
+    }
+
     public int Dirtiness { get; private set; }
     public int Popularity { get; private set; }
 
@@ -65,6 +72,13 @@ public class RestaurantManager : MonoBehaviour
     public int GetMaxCustomersForDirtiness()
     {
         return cachedMaxCustomers;
+    }
+
+    public DirtinessLevel GetDirtinessLevel()
+    {
+        if (Dirtiness <= 0) return DirtinessLevel.Clean;
+        if (Dirtiness < tooMuchDirtinessMinSpills) return DirtinessLevel.Dirty;
+        return DirtinessLevel.Filthy;
     }
 
     private void RefreshDirtiness()
