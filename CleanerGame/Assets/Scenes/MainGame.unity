@@ -4539,8 +4539,10 @@ MonoBehaviour:
   disabledAlpha: 0.25
   enabledAlpha: 1
   audioSource: {fileID: 1460187590}
-  availableClip: {fileID: 8300000, guid: e15bf4e55802b4e58a41deeaffc168b9, type: 3}
+  availableClip: {fileID: 8300000, guid: 513253dbc2111434cb160aa269b3b9ce, type: 3}
+  purchasedClip: {fileID: 8300000, guid: f8f61c103256643d0927151dfb377eab, type: 3}
   availableVolume: 1
+  purchasedVolume: 1
 --- !u!82 &1460187590
 AudioSource:
   m_ObjectHideFlags: 0

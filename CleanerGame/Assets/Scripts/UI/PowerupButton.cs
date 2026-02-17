@@ -19,8 +19,11 @@ public class PowerupButton : MonoBehaviour
     [Header("Audio")]
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip availableClip;   // 🔔 plays when button lights up
+    [SerializeField] private AudioClip purchasedClip;   // ✅ plays when purchase succeeds
     [Range(0f, 1f)]
     [SerializeField] private float availableVolume = 1f;
+    [Range(0f, 1f)]
+    [SerializeField] private float purchasedVolume = 1f;
 
     private bool wasAvailableLastFrame = false;
 
@@ -126,7 +129,24 @@ public class PowerupButton : MonoBehaviour
             return;
         }
 
+        PlayPurchasedSound();
         Debug.Log($"[PowerupButton] Broom used. Uses={broomSystem.UsesToday}, Mult={broomSystem.CurrentMultiplier:F2}x");
         Refresh();
+    }
+
+    private void PlayPurchasedSound()
+    {
+        if (purchasedClip == null) return;
+
+        if (audioSource == null)
+        {
+            audioSource = GetComponent<AudioSource>();
+            if (audioSource == null)
+                audioSource = gameObject.AddComponent<AudioSource>();
+
+            audioSource.playOnAwake = false;
+        }
+
+        audioSource.PlayOneShot(purchasedClip, purchasedVolume);
     }
 }
