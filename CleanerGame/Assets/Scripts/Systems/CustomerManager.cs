@@ -206,6 +206,7 @@ public class CustomerManager : MonoBehaviour
         for (int i = partyCustomers.Count - 1; i >= 0; i--)
         {
             if (partyCustomers[i] == null) continue;
+            partyCustomers[i].CleanupSeats(false);
             Destroy(partyCustomers[i].gameObject);
             activeCustomerCount = Mathf.Max(0, activeCustomerCount - 1);
         }

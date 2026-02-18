@@ -56,6 +56,16 @@ public class CustomerPartyAI : MonoBehaviour
         state = PartyState.PickingSeat;
     }
 
+    private void OnDisable()
+    {
+        CleanupSeats(false);
+    }
+
+    private void OnDestroy()
+    {
+        CleanupSeats(false);
+    }
+
     private void Update()
     {
         switch (state)
@@ -156,5 +166,24 @@ public class CustomerPartyAI : MonoBehaviour
     {
         if (chair == null || customerProxy == null) return;
         chair.ReleaseReservation(customerProxy);
+    }
+
+    public void CleanupSeats(bool spawnDirt)
+    {
+        if (reservedChair != null)
+        {
+            ReleaseReservation(reservedChair);
+            reservedChair = null;
+        }
+
+        if (assignedChair != null)
+        {
+            if (spawnDirt)
+                assignedChair.CustomerLeft();
+            else
+                assignedChair.ClearSeat(false);
+
+            assignedChair = null;
+        }
     }
 }

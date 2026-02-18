@@ -51,6 +51,17 @@ public class Chair : MonoBehaviour
         SpawnDirt();
     }
 
+    public void ClearSeat(bool spawnDirt)
+    {
+        IsOccupied = false;
+        IsReserved = false;
+        currentCustomer = null;
+        reservedCustomer = null;
+
+        if (spawnDirt)
+            SpawnDirt();
+    }
+
     void SpawnDirt()
     {
         RestaurantManager.Instance.AddDirt(1);
