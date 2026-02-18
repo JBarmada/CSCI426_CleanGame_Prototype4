@@ -11,6 +11,12 @@ public class GameOverUI : MonoBehaviour
     [SerializeField] private Button newGameButton;
     [SerializeField] private Button quitButton;
 
+    [Header("Audio")]
+    [SerializeField] private AudioSource loseAudioSource;
+    [SerializeField] private AudioClip loseScreenClip;
+    [Range(0f, 1f)]
+    [SerializeField] private float loseScreenVolume = 1f;
+
     private void Awake()
     {
         if (root == null)
@@ -26,6 +32,8 @@ public class GameOverUI : MonoBehaviour
             newGameButton.onClick.AddListener(OnNewGamePressed);
         if (quitButton != null)
             quitButton.onClick.AddListener(OnQuitPressed);
+
+        EnsureLoseAudioSource();
     }
 
     private void OnEnable()
@@ -45,6 +53,7 @@ public class GameOverUI : MonoBehaviour
     private void HandleGameOverByFilth()
     {
         ShowRoot();
+        PlayLoseScreenAudio();
         if (gameFlow != null)
             gameFlow.PauseGame();
         else
@@ -89,5 +98,29 @@ public class GameOverUI : MonoBehaviour
 
         if (root != null && root != gameObject)
             root.SetActive(false);
+    }
+
+    private void EnsureLoseAudioSource()
+    {
+        if (loseAudioSource == null)
+            loseAudioSource = GetComponent<AudioSource>();
+
+        if (loseAudioSource == null)
+            loseAudioSource = gameObject.AddComponent<AudioSource>();
+
+        if (loseAudioSource != null)
+            loseAudioSource.playOnAwake = false;
+    }
+
+    private void PlayLoseScreenAudio()
+    {
+        if (loseScreenClip == null)
+            return;
+
+        EnsureLoseAudioSource();
+        if (loseAudioSource == null)
+            return;
+
+        loseAudioSource.PlayOneShot(loseScreenClip, loseScreenVolume);
     }
 }

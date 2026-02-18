@@ -76,6 +76,13 @@ public class DayEndSummaryUI : MonoBehaviour
     [SerializeField] private float starPopScale = 1.2f;
     [SerializeField] private float starPopSeconds = 0.2f;
 
+    [Header("End Screen Audio")]
+    [SerializeField] private AudioSource endScreenAudioSource;
+    [SerializeField] private AudioClip promotionScreenClip;
+    [SerializeField] private AudioClip loseScreenClip;
+    [Range(0f, 1f)]
+    [SerializeField] private float endScreenVolume = 1f;
+
     private Coroutine starRoutine;
     private Coroutine promotionDecisionRoutine;
     private Coroutine decisionSlideRoutine;
@@ -124,6 +131,8 @@ public class DayEndSummaryUI : MonoBehaviour
 
         if (continueButton != null)
             continueButton.onClick.AddListener(OnContinuePressed);
+
+        EnsureEndScreenAudioSource();
 
         TryAutoBindPromotionStars();
         ShowPromotionStars(false);
@@ -261,6 +270,7 @@ public class DayEndSummaryUI : MonoBehaviour
         if (promoted)
         {
             ShowPanel(promotionScreen, promotionCanvasGroup);
+            PlayEndScreenAudio(promotionScreenClip);
             StartResultImageReveal(promotionResultImage);
 
             Debug.Log($"[DayEndSummaryUI] PROMOTED ✅ (Rep={rep}/{reputationRequiredToPromote})");
@@ -268,6 +278,7 @@ public class DayEndSummaryUI : MonoBehaviour
         else
         {
             ShowPanel(firedScreen, firedCanvasGroup);
+            PlayEndScreenAudio(loseScreenClip);
             StartResultImageReveal(firedResultImage);
 
             Debug.Log($"[DayEndSummaryUI] FIRED ❌ (Rep={rep}/{reputationRequiredToPromote})");
@@ -333,6 +344,30 @@ public class DayEndSummaryUI : MonoBehaviour
 
         starAudioSource.playOnAwake = false;
         starAudioSource.PlayOneShot(clip, starPopVolume);
+    }
+
+    private void EnsureEndScreenAudioSource()
+    {
+        if (endScreenAudioSource == null)
+            endScreenAudioSource = GetComponent<AudioSource>();
+
+        if (endScreenAudioSource == null)
+            endScreenAudioSource = gameObject.AddComponent<AudioSource>();
+
+        if (endScreenAudioSource != null)
+            endScreenAudioSource.playOnAwake = false;
+    }
+
+    private void PlayEndScreenAudio(AudioClip clip)
+    {
+        if (clip == null)
+            return;
+
+        EnsureEndScreenAudioSource();
+        if (endScreenAudioSource == null)
+            return;
+
+        endScreenAudioSource.PlayOneShot(clip, endScreenVolume);
     }
 
     private IEnumerator StarPopRoutine()
