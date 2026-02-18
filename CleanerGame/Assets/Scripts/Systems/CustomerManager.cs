@@ -13,6 +13,7 @@ public class CustomerManager : MonoBehaviour
     [SerializeField] private RestaurantManager restaurantManager;
     [SerializeField] private RestaurantDayCycle dayCycle;
     [SerializeField] private RestaurantReputation reputation;
+    [SerializeField] private bool logSpawnCaps;
     [Header("Spills")]
     [SerializeField] private SpillSpawner spillSpawner;
 
@@ -117,7 +118,13 @@ public class CustomerManager : MonoBehaviour
         int dirtinessAdjustedCap = Mathf.FloorToInt(baseCap * dirtinessMultiplier);
 
         float dayMultiplier = dayCycle == null ? 1f : dayCycle.GetSpawnMultiplier();
-        int cap = Mathf.Max(0, Mathf.FloorToInt(dirtinessAdjustedCap * dayMultiplier));
+        int cap = Mathf.Max(1, Mathf.FloorToInt(dirtinessAdjustedCap * dayMultiplier));
+        if (logSpawnCaps)
+        {
+            string phase = dayCycle == null ? "None" : dayCycle.GetPhase().ToString();
+            int dayCount = dayCycle == null ? 0 : dayCycle.DayCount;
+            Debug.Log($"Spawn cap calc -> day {dayCount}, phase {phase}, baseCap {baseCap}, dirtMult {dirtinessMultiplier:0.00}, dayMult {dayMultiplier:0.00}, cap {cap}", this);
+        }
         if (activeCustomers.Count >= cap) return;
 
         Transform spawnPoint = spawnPoints[Random.Range(0, spawnPoints.Length)];
