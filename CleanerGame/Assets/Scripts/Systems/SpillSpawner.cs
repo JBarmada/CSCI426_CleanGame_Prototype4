@@ -8,6 +8,13 @@ public class SpillSpawner : MonoBehaviour
     [Header("Spill Limits")]
     [SerializeField] private int maxActiveSpills = 10;        // cap total spills in scene
 
+    public int MaxActiveSpills => maxActiveSpills;
+
+    public int GetActiveSpillCount()
+    {
+        return FindObjectsByType<SpillManager>(FindObjectsSortMode.None).Length;
+    }
+
     [Header("Spawn Placement Around Chair (Floor Only)")]
     [SerializeField] private float innerRing = 0.4f;          // min distance from chair center
     [SerializeField] private float outerRing = 1.0f;          // max distance from chair center
