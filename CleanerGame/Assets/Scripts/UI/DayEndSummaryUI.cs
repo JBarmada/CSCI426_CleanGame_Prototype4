@@ -28,7 +28,11 @@ public class DayEndSummaryUI : MonoBehaviour
     [SerializeField] private CanvasGroup firedCanvasGroup;
     [SerializeField] private GameObject promotionResultImage;
     [SerializeField] private GameObject firedResultImage;
-    [SerializeField] private float resultImageRevealDelaySeconds = 2f;
+    [SerializeField] private float resultImageRevealDelaySeconds = 3f;
+    [SerializeField] private float resultImageImpactSeconds = 0.2f;
+    [SerializeField] private float resultImageImpactStartScale = 1.8f;
+    [SerializeField] private float resultImageImpactEndScale = 1f;
+    [SerializeField] private float resultImageImpactShakeStrength = 16f;
 
     [Header("Promotion Rules")]
     [SerializeField] private int promotionDay = 3;
@@ -80,6 +84,7 @@ public class DayEndSummaryUI : MonoBehaviour
     private int lastSummaryDay = -1;
 
     private bool waitingForPromotionDecision = false;
+    private bool legacyReputationStarVisibleState = true;
 
     private RectLayoutState promotionStarsLayoutState;
     private bool promotionStarsLayoutCaptured;
@@ -188,6 +193,7 @@ public class DayEndSummaryUI : MonoBehaviour
     private void UpdateContinueButtonForDay(int dayNumber, bool isFinalDay)
     {
         waitingForPromotionDecision = isFinalDay && dayNumber == promotionDay;
+        UpdateLegacyReputationStarVisibility();
         RefreshPromotionStars();
         RefreshPromotionCoins();
         ShowPromotionStars(waitingForPromotionDecision);
@@ -368,6 +374,7 @@ public class DayEndSummaryUI : MonoBehaviour
         HideRoot();
         ShowPromotionStars(false);
         ShowPromotionCoins(false);
+        UpdateLegacyReputationStarVisibility();
         Time.timeScale = previousTimeScale;
     }
 
@@ -775,8 +782,67 @@ public class DayEndSummaryUI : MonoBehaviour
             yield return new WaitForSecondsRealtime(delay);
 
         if (targetImage != null)
+        {
             targetImage.SetActive(true);
+            yield return StartCoroutine(PlayResultImageImpactRoutine(targetImage));
+        }
 
         resultImageRevealRoutine = null;
+    }
+
+    private IEnumerator PlayResultImageImpactRoutine(GameObject targetImage)
+    {
+        if (targetImage == null)
+            yield break;
+
+        Transform imageTransform = targetImage.transform;
+        Vector3 originalScale = imageTransform.localScale;
+        Vector3 impactStart = originalScale * Mathf.Max(0.1f, resultImageImpactStartScale);
+        Vector3 impactEnd = originalScale * Mathf.Max(0.1f, resultImageImpactEndScale);
+        Vector3 originalPosition = imageTransform.localPosition;
+
+        float duration = Mathf.Max(0f, resultImageImpactSeconds);
+        if (duration <= 0f)
+        {
+            imageTransform.localScale = impactEnd;
+            imageTransform.localPosition = originalPosition;
+            yield break;
+        }
+
+        imageTransform.localScale = impactStart;
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float t = Mathf.Clamp01(elapsed / duration);
+            float eased = 1f - Mathf.Pow(1f - t, 4f);
+
+            float shakeAmount = (1f - eased) * Mathf.Max(0f, resultImageImpactShakeStrength);
+            float shakeX = Mathf.Sin(elapsed * 90f) * shakeAmount;
+            float shakeY = Mathf.Cos(elapsed * 70f) * shakeAmount * 0.35f;
+
+            imageTransform.localScale = Vector3.LerpUnclamped(impactStart, impactEnd, eased);
+            imageTransform.localPosition = originalPosition + new Vector3(shakeX, shakeY, 0f);
+
+            yield return null;
+        }
+
+        imageTransform.localScale = impactEnd;
+        imageTransform.localPosition = originalPosition;
+    }
+
+    private void UpdateLegacyReputationStarVisibility()
+    {
+        if (reputationStar == null) return;
+
+        if (waitingForPromotionDecision)
+        {
+            legacyReputationStarVisibleState = reputationStar.gameObject.activeSelf;
+            reputationStar.gameObject.SetActive(false);
+            return;
+        }
+
+        reputationStar.gameObject.SetActive(legacyReputationStarVisibleState);
     }
 }
