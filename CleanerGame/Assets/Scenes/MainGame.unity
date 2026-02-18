@@ -1867,7 +1867,7 @@ MonoBehaviour:
   dayCycle: {fileID: 613359823}
   reputation: {fileID: 613359826}
   logSpawnCaps: 1
-  partyDayPartyCustomerChance: 0.7
+  partyDayPartyCustomerChance: 1
   partyDaySpillBaseChance: 1
   spillSpawner: {fileID: 613359821}
 --- !u!4 &461730724
@@ -6826,6 +6826,8 @@ MonoBehaviour:
   resultImageImpactShakeStrength: 16
   promotionDay: 3
   reputationRequiredToPromote: 3
+  promotionCostCoins: 25
+  reputationStarCostCoins: 17
   promotionMiddleAnchor: {fileID: 378248091}
   promotionStarsRoot: {fileID: 133756286}
   promotionStars: []

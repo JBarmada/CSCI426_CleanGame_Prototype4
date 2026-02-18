@@ -37,6 +37,8 @@ public class DayEndSummaryUI : MonoBehaviour
     [Header("Promotion Rules")]
     [SerializeField] private int promotionDay = 3;
     [SerializeField] private int reputationRequiredToPromote = 3;
+    [SerializeField] private int promotionCostCoins = 25;
+    [SerializeField] private int reputationStarCostCoins = 17;
 
     [Header("Promotion Decision Stars")]
     [SerializeField] private RectTransform promotionMiddleAnchor;
@@ -84,6 +86,7 @@ public class DayEndSummaryUI : MonoBehaviour
     [SerializeField] private float endScreenVolume = 1f;
 
     private Coroutine starRoutine;
+    private Coroutine promotionStarPopRoutine;
     private Coroutine promotionDecisionRoutine;
     private Coroutine decisionSlideRoutine;
     private Coroutine resultImageRevealRoutine;
@@ -248,13 +251,35 @@ public class DayEndSummaryUI : MonoBehaviour
     private IEnumerator ResolvePromotionOrFiredRoutine()
     {
         int rep = reputation == null ? 0 : reputation.Reputation;
-        bool promoted = rep >= reputationRequiredToPromote;
+        bool hasRequiredReputation = rep >= reputationRequiredToPromote;
 
         if (continueButton != null)
             continueButton.interactable = false;
 
         RefreshPromotionCoins();
-        AnimatePromotionStars(promoted);
+        if (!hasRequiredReputation)
+        {
+            bool purchasedStar = TryPurchaseReputationStar();
+            if (!purchasedStar)
+                AnimatePromotionStars(false);
+
+            if (continueButton != null)
+                continueButton.interactable = true;
+            promotionDecisionRoutine = null;
+            yield break;
+        }
+
+        if (coinWallet == null || !coinWallet.TrySpend(promotionCostCoins))
+        {
+            AnimatePromotionStars(false);
+            if (continueButton != null)
+                continueButton.interactable = true;
+            promotionDecisionRoutine = null;
+            yield break;
+        }
+
+        RefreshPromotionCoins();
+        AnimatePromotionStars(true);
 
         float waitSeconds = Mathf.Max(0f, promotionStarShakeSeconds + promotionDecisionDelaySeconds);
         if (waitSeconds > 0f)
@@ -267,26 +292,34 @@ public class DayEndSummaryUI : MonoBehaviour
         // Keep time paused for end screens (optional)
         Time.timeScale = 0f;
 
-        if (promoted)
-        {
-            ShowPanel(promotionScreen, promotionCanvasGroup);
-            PlayEndScreenAudio(promotionScreenClip);
-            StartResultImageReveal(promotionResultImage);
+        ShowPanel(promotionScreen, promotionCanvasGroup);
+        PlayEndScreenAudio(promotionScreenClip);
+        StartResultImageReveal(promotionResultImage);
 
-            Debug.Log($"[DayEndSummaryUI] PROMOTED ✅ (Rep={rep}/{reputationRequiredToPromote})");
-        }
-        else
-        {
-            ShowPanel(firedScreen, firedCanvasGroup);
-            PlayEndScreenAudio(loseScreenClip);
-            StartResultImageReveal(firedResultImage);
-
-            Debug.Log($"[DayEndSummaryUI] FIRED ❌ (Rep={rep}/{reputationRequiredToPromote})");
-        }
+        Debug.Log($"[DayEndSummaryUI] PROMOTED ✅ (Rep={rep}/{reputationRequiredToPromote})");
 
         if (continueButton != null)
             continueButton.interactable = true;
         promotionDecisionRoutine = null;
+    }
+
+    private bool TryPurchaseReputationStar()
+    {
+        if (reputation == null) return false;
+        if (reputation.Reputation >= reputationRequiredToPromote) return false;
+        if (coinWallet == null || !coinWallet.TrySpend(reputationStarCostCoins)) return false;
+
+        if (!reputation.TryIncreaseReputation())
+        {
+            coinWallet.AddCoins(reputationStarCostCoins);
+            return false;
+        }
+
+        RefreshPromotionCoins();
+        RefreshPromotionStars();
+        PlayStarResultAudio(true);
+        PlayPromotionStarPop(reputation.Reputation - 1);
+        return true;
     }
 
     private void UpdateUI(int spillsCleaned, float filthTime, int salaryBonus, bool earnedStar)
@@ -318,6 +351,17 @@ public class DayEndSummaryUI : MonoBehaviour
             StopCoroutine(starRoutine);
 
         starRoutine = StartCoroutine(StarPopRoutine());
+    }
+
+    private void PlayPromotionStarPop(int index)
+    {
+        if (promotionStars == null || index < 0 || index >= promotionStars.Length) return;
+        if (promotionStars[index] == null) return;
+
+        if (promotionStarPopRoutine != null)
+            StopCoroutine(promotionStarPopRoutine);
+
+        promotionStarPopRoutine = StartCoroutine(PromotionStarPopRoutine(promotionStars[index]));
     }
 
     private void PlayStarResultAudio(bool earnedStar)
@@ -394,6 +438,36 @@ public class DayEndSummaryUI : MonoBehaviour
         }
 
         reputationStar.transform.localScale = baseScale;
+    }
+
+    private IEnumerator PromotionStarPopRoutine(Image star)
+    {
+        if (star == null)
+            yield break;
+
+        Transform starTransform = star.transform;
+        Vector3 baseScale = starTransform.localScale;
+        Vector3 targetScale = baseScale * starPopScale;
+
+        float t = 0f;
+        while (t < starPopSeconds)
+        {
+            t += Time.unscaledDeltaTime;
+            float lerp = Mathf.Clamp01(t / starPopSeconds);
+            starTransform.localScale = Vector3.Lerp(baseScale, targetScale, lerp);
+            yield return null;
+        }
+
+        t = 0f;
+        while (t < starPopSeconds)
+        {
+            t += Time.unscaledDeltaTime;
+            float lerp = Mathf.Clamp01(t / starPopSeconds);
+            starTransform.localScale = Vector3.Lerp(targetScale, baseScale, lerp);
+            yield return null;
+        }
+
+        starTransform.localScale = baseScale;
     }
 
     private int CalculateSalaryBonus(float filthTime)
