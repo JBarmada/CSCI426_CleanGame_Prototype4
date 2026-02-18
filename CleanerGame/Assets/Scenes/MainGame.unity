@@ -7753,14 +7753,6 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 538074739}
     - target: {fileID: 1687273238878207817, guid: 584221e790650b247b8b5c4d94beccae, type: 3}
-      propertyPath: yellSeconds
-      value: 1.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 1687273238878207817, guid: 584221e790650b247b8b5c4d94beccae, type: 3}
-      propertyPath: debugRepeatYell
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1687273238878207817, guid: 584221e790650b247b8b5c4d94beccae, type: 3}
       propertyPath: restaurantManager
       value: 
       objectReference: {fileID: 613359819}

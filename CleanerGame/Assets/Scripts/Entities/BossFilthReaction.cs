@@ -32,6 +32,12 @@ public class BossFilthReaction : MonoBehaviour
     [SerializeField] private float turnDegrees = 180f;
     [SerializeField] private float turnSeconds = 0.2f;
 
+    [Header("Audio")]
+    [SerializeField] private AudioSource madAudioSource;
+    [SerializeField] private AudioClip madClip;
+    [Range(0f, 1f)]
+    [SerializeField] private float madVolume = 1f;
+
     [Header("Debug")]
     [SerializeField] private bool debugRepeatYell = false;
     [SerializeField] private float debugRepeatSeconds = 5f;
@@ -55,6 +61,8 @@ public class BossFilthReaction : MonoBehaviour
 
         if (yellText != null)
             yellText.gameObject.SetActive(false);
+
+        EnsureMadAudioSource();
     }
 
     private void OnEnable()
@@ -141,6 +149,8 @@ public class BossFilthReaction : MonoBehaviour
     private void HandleFilthyStrikeTriggered()
     {
         if (isCutscene) return;
+
+        PlayMadAudio();
 
         if (cutsceneRoutine != null)
             StopCoroutine(cutsceneRoutine);
@@ -269,5 +279,29 @@ public class BossFilthReaction : MonoBehaviour
 
         mainCam.transform.position = basePos;
         mainCam.transform.rotation = baseRot;
+    }
+
+    private void EnsureMadAudioSource()
+    {
+        if (madAudioSource == null)
+            madAudioSource = GetComponent<AudioSource>();
+
+        if (madAudioSource == null)
+            madAudioSource = gameObject.AddComponent<AudioSource>();
+
+        if (madAudioSource != null)
+            madAudioSource.playOnAwake = false;
+    }
+
+    private void PlayMadAudio()
+    {
+        if (madClip == null)
+            return;
+
+        EnsureMadAudioSource();
+        if (madAudioSource == null)
+            return;
+
+        madAudioSource.PlayOneShot(madClip, madVolume);
     }
 }
