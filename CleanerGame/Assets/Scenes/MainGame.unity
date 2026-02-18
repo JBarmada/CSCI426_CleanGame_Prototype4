@@ -2864,9 +2864,9 @@ MonoBehaviour:
   reputation3SpawnBonus: 2
   lightDirtinessMinSpillCount: 2
   mediumDirtinessMinSpillCount: 4
-  veryDirtyMinSpillCount: 7
-  filthyMinSpillCount: 8
-  filthySpillCountSpan: 8
+  veryDirtyMinSpillCount: 5
+  filthyMinSpillCount: 7
+  filthySpillCountSpan: 5
   cleanMaxCustomersCap: 16
   lightDirtinessCustomerRange: {x: 9, y: 12}
   mediumDirtinessCustomerRange: {x: 8, y: 10}
@@ -6861,6 +6861,22 @@ MonoBehaviour:
   promotionScreenClip: {fileID: 8300000, guid: 688c774c30ed24ba9ae8fe529c053b16, type: 3}
   loseScreenClip: {fileID: 8300000, guid: 3a14efea818e04e839473c4258e671bd, type: 3}
   endScreenVolume: 0.712
+  debugEnable: 1
+  debugLog: 1
+  debugWaitForGameStart: 1
+  debugApplyOnce: 1
+  debugForceShowSummary: 0
+  debugSummaryDay: 3
+  debugSummaryIsFinalDay: 0
+  debugOverrideReputation: 0
+  debugReputationValue: 0
+  debugOverrideCoins: 0
+  debugCoinsValue: 0
+  debugGiveCoinsAmount: 5
+  debugGiveCoinsKey: 286
+  debugGiveRepKey: 287
+  debugApplyOverridesKey: 288
+  debugNextDayKey: 289
 --- !u!114 &1297791247
 MonoBehaviour:
   m_ObjectHideFlags: 0

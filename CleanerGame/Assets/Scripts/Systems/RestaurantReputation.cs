@@ -23,6 +23,11 @@ public class RestaurantReputation : MonoBehaviour
         return true;
     }
 
+    public void DebugSetReputation(int value)
+    {
+        reputation = Mathf.Clamp(value, 0, maxReputation);
+    }
+
     public int GetCustomerCapForReputation()
     {
         if (spawnTuning == null)

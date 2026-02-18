@@ -80,4 +80,10 @@ public class CoinWallet : MonoBehaviour
         CoinsChanged?.Invoke(coins);
         return true;
     }
+
+    public void DebugSetCoins(int amount)
+    {
+        coins = Mathf.Max(0, amount);
+        CoinsChanged?.Invoke(coins);
+    }
 }

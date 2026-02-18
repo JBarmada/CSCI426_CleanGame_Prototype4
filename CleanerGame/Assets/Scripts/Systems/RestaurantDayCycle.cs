@@ -124,7 +124,7 @@ public class RestaurantDayCycle : MonoBehaviour
             }
             else
             {
-                EndDay();
+                EndDay(true);
             }
         }
     }
@@ -137,11 +137,11 @@ public class RestaurantDayCycle : MonoBehaviour
         DayStarted?.Invoke(dayCount);
     }
 
-    private void EndDay()
+    private void EndDay(bool allowGameOver)
     {
         dayTimer = dayLengthSeconds;
         bool isFinalDay = dayCount >= Mathf.Max(1, maxDays);
-        if (isFinalDay)
+        if (allowGameOver && isFinalDay)
             gameOver = true;
 
         SetPhase(DayPhase.Closing);
@@ -152,8 +152,21 @@ public class RestaurantDayCycle : MonoBehaviour
         else if (!isFinalDay)
             StartNextDay();
 
-        if (isFinalDay)
+        if (allowGameOver && isFinalDay)
             Debug.Log("[DayCycle] Game over - no more days.");
+    }
+
+    public void DebugAdvanceDay()
+    {
+        if (gameOver) return;
+
+        if (waitingForContinue)
+        {
+            ContinueToNextDay();
+            return;
+        }
+
+        EndDay(false);
     }
 
     private void SetPhase(DayPhase phase)

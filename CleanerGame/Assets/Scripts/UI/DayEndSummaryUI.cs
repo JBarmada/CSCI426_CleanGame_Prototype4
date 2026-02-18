@@ -85,6 +85,24 @@ public class DayEndSummaryUI : MonoBehaviour
     [Range(0f, 1f)]
     [SerializeField] private float endScreenVolume = 1f;
 
+    [Header("Debug")]
+    [SerializeField] private bool debugEnable;
+    [SerializeField] private bool debugLog;
+    [SerializeField] private bool debugWaitForGameStart = true;
+    [SerializeField] private bool debugApplyOnce = true;
+    [SerializeField] private bool debugForceShowSummary;
+    [SerializeField] private int debugSummaryDay = 3;
+    [SerializeField] private bool debugSummaryIsFinalDay = true;
+    [SerializeField] private bool debugOverrideReputation;
+    [SerializeField] private int debugReputationValue;
+    [SerializeField] private bool debugOverrideCoins;
+    [SerializeField] private int debugCoinsValue;
+    [SerializeField] private int debugGiveCoinsAmount = 5;
+    [SerializeField] private KeyCode debugGiveCoinsKey = KeyCode.F5;
+    [SerializeField] private KeyCode debugGiveRepKey = KeyCode.F6;
+    [SerializeField] private KeyCode debugApplyOverridesKey = KeyCode.F7;
+    [SerializeField] private KeyCode debugNextDayKey = KeyCode.F8;
+
     private Coroutine starRoutine;
     private Coroutine promotionStarPopRoutine;
     private Coroutine promotionDecisionRoutine;
@@ -92,6 +110,7 @@ public class DayEndSummaryUI : MonoBehaviour
     private Coroutine resultImageRevealRoutine;
     private float previousTimeScale = 1f;
     private int lastSummaryDay = -1;
+    private bool debugApplied;
 
     private bool waitingForPromotionDecision = false;
     private bool legacyReputationStarVisibleState = true;
@@ -135,6 +154,7 @@ public class DayEndSummaryUI : MonoBehaviour
         if (continueButton != null)
             continueButton.onClick.AddListener(OnContinuePressed);
 
+
         EnsureEndScreenAudioSource();
 
         TryAutoBindPromotionStars();
@@ -155,6 +175,13 @@ public class DayEndSummaryUI : MonoBehaviour
         HidePanel(firedScreen, firedCanvasGroup);
         ShowPromotionCoins(false);
         HideResultImages();
+
+
+        if (debugEnable)
+            StartCoroutine(ApplyDebugWhenReady());
+
+        if (debugEnable && debugLog)
+            Debug.Log("[DayEndSummaryUI][Debug] Enabled.", this);
     }
 
     private void OnDisable()
@@ -259,9 +286,23 @@ public class DayEndSummaryUI : MonoBehaviour
         RefreshPromotionCoins();
         if (!hasRequiredReputation)
         {
-            bool purchasedStar = TryPurchaseReputationStar();
-            if (!purchasedStar)
-                AnimatePromotionStars(false);
+            bool insufficientCoins;
+            bool purchasedStar = TryPurchaseReputationStar(out insufficientCoins);
+            if (purchasedStar)
+            {
+                if (continueButton != null)
+                    continueButton.interactable = true;
+                promotionDecisionRoutine = null;
+                yield break;
+            }
+
+            AnimatePromotionStars(false);
+            if (insufficientCoins)
+            {
+                yield return ShowFiredAfterDelay();
+                promotionDecisionRoutine = null;
+                yield break;
+            }
 
             if (continueButton != null)
                 continueButton.interactable = true;
@@ -272,8 +313,7 @@ public class DayEndSummaryUI : MonoBehaviour
         if (coinWallet == null || !coinWallet.TrySpend(promotionCostCoins))
         {
             AnimatePromotionStars(false);
-            if (continueButton != null)
-                continueButton.interactable = true;
+            yield return ShowFiredAfterDelay();
             promotionDecisionRoutine = null;
             yield break;
         }
@@ -285,11 +325,7 @@ public class DayEndSummaryUI : MonoBehaviour
         if (waitSeconds > 0f)
             yield return new WaitForSecondsRealtime(waitSeconds);
 
-        // Hide ONLY the summary panel if you want (optional)
-        // If you want the summary background to disappear, keep this:
         HideRoot();
-
-        // Keep time paused for end screens (optional)
         Time.timeScale = 0f;
 
         ShowPanel(promotionScreen, promotionCanvasGroup);
@@ -303,11 +339,16 @@ public class DayEndSummaryUI : MonoBehaviour
         promotionDecisionRoutine = null;
     }
 
-    private bool TryPurchaseReputationStar()
+    private bool TryPurchaseReputationStar(out bool insufficientCoins)
     {
+        insufficientCoins = false;
         if (reputation == null) return false;
         if (reputation.Reputation >= reputationRequiredToPromote) return false;
-        if (coinWallet == null || !coinWallet.TrySpend(reputationStarCostCoins)) return false;
+        if (coinWallet == null || !coinWallet.TrySpend(reputationStarCostCoins))
+        {
+            insufficientCoins = true;
+            return false;
+        }
 
         if (!reputation.TryIncreaseReputation())
         {
@@ -320,6 +361,20 @@ public class DayEndSummaryUI : MonoBehaviour
         PlayStarResultAudio(true);
         PlayPromotionStarPop(reputation.Reputation - 1);
         return true;
+    }
+
+    private IEnumerator ShowFiredAfterDelay()
+    {
+        float waitSeconds = Mathf.Max(0f, promotionStarShakeSeconds + promotionDecisionDelaySeconds);
+        if (waitSeconds > 0f)
+            yield return new WaitForSecondsRealtime(waitSeconds);
+
+        HideRoot();
+        Time.timeScale = 0f;
+
+        ShowPanel(firedScreen, firedCanvasGroup);
+        PlayEndScreenAudio(loseScreenClip);
+        StartResultImageReveal(firedResultImage);
     }
 
     private void UpdateUI(int spillsCleaned, float filthTime, int salaryBonus, bool earnedStar)
@@ -954,4 +1009,126 @@ public class DayEndSummaryUI : MonoBehaviour
 
         reputationStar.gameObject.SetActive(legacyReputationStarVisibleState);
     }
+
+    private IEnumerator ApplyDebugWhenReady()
+    {
+        if (debugApplyOnce && debugApplied)
+            yield break;
+
+        if (debugWaitForGameStart)
+        {
+            while (!HasGameStarted())
+                yield return null;
+        }
+
+        ApplyDebugOverrides();
+
+        if (debugLog)
+            Debug.Log("[DayEndSummaryUI][Debug] Overrides applied.", this);
+    }
+
+    private void Update()
+    {
+        if (!debugEnable) return;
+        if (!HasGameStarted())
+        {
+            if (debugLog)
+                Debug.Log("[DayEndSummaryUI][Debug] Waiting for game start.", this);
+            return;
+        }
+
+        if (debugGiveCoinsKey != KeyCode.None && Input.GetKeyDown(debugGiveCoinsKey))
+            DebugGiveCoins();
+        if (debugGiveRepKey != KeyCode.None && Input.GetKeyDown(debugGiveRepKey))
+            DebugGiveReputation();
+        if (debugApplyOverridesKey != KeyCode.None && Input.GetKeyDown(debugApplyOverridesKey))
+            ApplyDebugOverrides();
+        if (debugNextDayKey != KeyCode.None && Input.GetKeyDown(debugNextDayKey))
+            DebugAdvanceDay();
+    }
+
+    private bool HasGameStarted()
+    {
+        if (GameFlowManager.Instance != null)
+            return !GameFlowManager.Instance.IsPaused;
+
+        return Time.timeScale > 0f;
+    }
+
+    private void ApplyDebugOverrides()
+    {
+        if (debugApplyOnce && debugApplied)
+            return;
+
+        if (debugOverrideReputation && reputation != null)
+            reputation.DebugSetReputation(debugReputationValue);
+
+        if (debugOverrideCoins && coinWallet != null)
+            coinWallet.DebugSetCoins(debugCoinsValue);
+
+        RefreshPromotionStars();
+        RefreshPromotionCoins();
+
+        if (debugForceShowSummary)
+            ShowSummary(debugSummaryDay, debugSummaryIsFinalDay);
+
+        debugApplied = true;
+    }
+
+    private void DebugGiveCoins()
+    {
+        if (!debugEnable || !HasGameStarted()) return;
+        if (coinWallet == null) return;
+
+        int amount = Mathf.Max(0, debugGiveCoinsAmount);
+        if (amount <= 0) return;
+
+        coinWallet.AddCoins(amount);
+        RefreshPromotionCoins();
+
+        if (debugLog)
+            Debug.Log($"[DayEndSummaryUI][Debug] Added {amount} coins.", this);
+    }
+
+
+    private void DebugGiveReputation()
+    {
+        if (!debugEnable || !HasGameStarted()) return;
+        if (reputation == null) return;
+
+        if (reputation.TryIncreaseReputation())
+        {
+            RefreshPromotionStars();
+            PlayPromotionStarPop(reputation.Reputation - 1);
+
+            if (debugLog)
+                Debug.Log("[DayEndSummaryUI][Debug] Added 1 reputation.", this);
+        }
+        else
+        {
+            if (debugLog)
+                Debug.Log("[DayEndSummaryUI][Debug] Reputation already at max.", this);
+        }
+    }
+
+    private void DebugAdvanceDay()
+    {
+        if (!debugEnable || !HasGameStarted()) return;
+        if (dayCycle == null) return;
+
+        if (waitingForPromotionDecision)
+        {
+            dayCycle.DebugAdvanceDay();
+            Hide();
+            if (debugLog)
+                Debug.Log("[DayEndSummaryUI][Debug] Advance day from promotion summary.", this);
+            return;
+        }
+
+        dayCycle.DebugAdvanceDay();
+
+        if (debugLog)
+            Debug.Log("[DayEndSummaryUI][Debug] Advance day hotkey used.", this);
+    }
+
 }
