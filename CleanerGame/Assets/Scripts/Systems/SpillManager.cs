@@ -14,6 +14,12 @@ public class SpillManager : MonoBehaviour
     [SerializeField] private RestaurantSpillTracker spillTracker;
     [SerializeField] private SpillComboSystem comboSystem;
 
+    [Header("Day 2 Tuning")]
+    [SerializeField] private bool useDay2Tuning = true;
+    [Range(0.1f, 1f)]
+    [SerializeField] private float day2SweepsToCleanMultiplier = 0.75f;
+    [SerializeField] private RestaurantDayCycle dayCycle;
+
     [Header("Fade")]
     [SerializeField] private SpriteRenderer spriteRenderer; // assign, or auto-find
     [SerializeField] private bool destroyRoot = false;      // true if this script is on a child trigger
@@ -31,34 +37,37 @@ public class SpillManager : MonoBehaviour
         if (spriteRenderer == null)
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
 
+        if (dayCycle == null)
+            dayCycle = FindFirstObjectByType<RestaurantDayCycle>();
+
         sweepProgress = 0f;
         UpdateVisual();
     }
 
     private void Update()
-{
-    if (!playerInRange || cleaned) return;
-
-    if (Input.GetKey(sweepKey))
     {
-        float mult = BroomPowerupSystem.Instance != null ? BroomPowerupSystem.Instance.CurrentMultiplier : 1f;
-sweepProgress += (sweepsPerSecond * mult) * Time.deltaTime;
-        UpdateVisual();
+        if (!playerInRange || cleaned) return;
 
-        if (sweepProgress >= sweepsToClean)
+        if (Input.GetKey(sweepKey))
         {
-            cleaned = true;
-            AwardCoins();
+            float mult = BroomPowerupSystem.Instance != null ? BroomPowerupSystem.Instance.CurrentMultiplier : 1f;
+            sweepProgress += (sweepsPerSecond * mult) * Time.deltaTime;
+            UpdateVisual();
 
-            Debug.Log($"[Spill] Cleaned with multiplier {mult:F2}x");
+            if (sweepProgress >= GetEffectiveSweepsToClean())
+            {
+                cleaned = true;
+                AwardCoins();
 
-            if (destroyRoot && transform.parent != null)
-                Destroy(transform.parent.gameObject);
-            else
-                Destroy(gameObject);
+                Debug.Log($"[Spill] Cleaned with multiplier {mult:F2}x");
+
+                if (destroyRoot && transform.parent != null)
+                    Destroy(transform.parent.gameObject);
+                else
+                    Destroy(gameObject);
+            }
         }
     }
-}
 
 
 
@@ -79,7 +88,7 @@ sweepProgress += (sweepsPerSecond * mult) * Time.deltaTime;
         if (spriteRenderer == null) return;
 
         // Full alpha at 0 progress, fades out as progress approaches sweepsToClean
-        float t = Mathf.Clamp01(sweepProgress / sweepsToClean);
+        float t = Mathf.Clamp01(sweepProgress / GetEffectiveSweepsToClean());
         float alpha = 1f - t;
 
         var c = spriteRenderer.color;
@@ -110,5 +119,14 @@ sweepProgress += (sweepsPerSecond * mult) * Time.deltaTime;
 
         if (spillTracker != null)
             spillTracker.AddSpillCleaned();
+    }
+
+    private float GetEffectiveSweepsToClean()
+    {
+        float target = Mathf.Max(1f, sweepsToClean);
+        if (useDay2Tuning && dayCycle != null && dayCycle.DayCount == 2)
+            target = Mathf.Max(1f, target * day2SweepsToCleanMultiplier);
+
+        return target;
     }
 }

@@ -14,6 +14,11 @@ public class CustomerManager : MonoBehaviour
     [SerializeField] private RestaurantDayCycle dayCycle;
     [SerializeField] private RestaurantReputation reputation;
     [SerializeField] private bool logSpawnCaps;
+    [Header("Party Day Tuning")]
+    [Range(0f, 1f)]
+    [SerializeField] private float partyDayPartyCustomerChance = 0.7f;
+    [Range(0f, 1f)]
+    [SerializeField] private float partyDaySpillBaseChance = 1f;
     [Header("Spills")]
     [SerializeField] private SpillSpawner spillSpawner;
 
@@ -147,12 +152,15 @@ public class CustomerManager : MonoBehaviour
 
         if (isPartyDay && partyCustomerPrefab != null)
         {
-            CustomerPartyAI partyCustomer = Instantiate(partyCustomerPrefab, spawnPoint.position, spawnPoint.rotation);
-            partyCustomer.gameObject.SetActive(true);
-            partyCustomer.Initialize(this);
-            partyCustomers.Add(partyCustomer);
-            activeCustomerCount++;
-            return;
+            if (Random.value <= partyDayPartyCustomerChance)
+            {
+                CustomerPartyAI partyCustomer = Instantiate(partyCustomerPrefab, spawnPoint.position, spawnPoint.rotation);
+                partyCustomer.gameObject.SetActive(true);
+                partyCustomer.Initialize(this);
+                partyCustomers.Add(partyCustomer);
+                activeCustomerCount++;
+                return;
+            }
         }
 
         Customer customer = Instantiate(customerPrefab, spawnPoint.position, spawnPoint.rotation);
@@ -170,11 +178,21 @@ public class CustomerManager : MonoBehaviour
         activeCustomerCount++;
     }
     public void OnCustomerLeftChair(Vector3 chairPos)
-{
-    if (spillSpawner == null) return;
+    {
+        if (spillSpawner == null) return;
 
-    spillSpawner.TrySpawnSpillNearChair(chairPos);
-}
+        bool isPartyDay = dayCycle != null && dayCycle.DayCount == 2;
+        if (isPartyDay)
+        {
+            int activeSpills = spillSpawner.GetActiveSpillCount();
+            int maxSpills = Mathf.Max(1, spillSpawner.MaxActiveSpills);
+            float throttle = 1f - Mathf.Clamp01((float)activeSpills / maxSpills);
+            float chance = Mathf.Clamp01(partyDaySpillBaseChance * throttle);
+            if (Random.value > chance) return;
+        }
+
+        spillSpawner.TrySpawnSpillNearChair(chairPos);
+    }
 
     private float GetCurrentSpawnIntervalSeconds()
     {
