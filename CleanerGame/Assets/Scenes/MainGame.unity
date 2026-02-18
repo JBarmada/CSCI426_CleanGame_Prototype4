@@ -2185,7 +2185,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 19}
+  m_AnchoredPosition: {x: 0, y: 57}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &517101644
@@ -5762,14 +5762,14 @@ RectTransform:
   m_GameObject: {fileID: 988469808}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 4, y: 4, z: 4}
+  m_LocalScale: {x: 3.23, y: 3.23, z: 3.23}
   m_ConstrainProportionsScale: 1
   m_Children: []
   m_Father: {fileID: 1716659884}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 41}
+  m_AnchoredPosition: {x: 0, y: 56}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &988469810
@@ -7201,6 +7201,10 @@ MonoBehaviour:
   promotionResultImage: {fileID: 0}
   firedResultImage: {fileID: 0}
   resultImageRevealDelaySeconds: 2
+  resultImageImpactSeconds: 0.2
+  resultImageImpactStartScale: 1.8
+  resultImageImpactEndScale: 1
+  resultImageImpactShakeStrength: 16
   promotionDay: 3
   reputationRequiredToPromote: 3
   promotionMiddleAnchor: {fileID: 378248091}
