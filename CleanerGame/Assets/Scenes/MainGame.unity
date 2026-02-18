@@ -2506,6 +2506,9 @@ MonoBehaviour:
   gameFlow: {fileID: 784076610}
   newGameButton: {fileID: 479597245}
   quitButton: {fileID: 1809227622}
+  loseAudioSource: {fileID: 0}
+  loseScreenClip: {fileID: 0}
+  loseScreenVolume: 1
 --- !u!1001 &573581650
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6850,6 +6853,10 @@ MonoBehaviour:
   starPopVolume: 1
   starPopScale: 1.2
   starPopSeconds: 0.2
+  endScreenAudioSource: {fileID: 0}
+  promotionScreenClip: {fileID: 8300000, guid: 688c774c30ed24ba9ae8fe529c053b16, type: 3}
+  loseScreenClip: {fileID: 8300000, guid: 3a14efea818e04e839473c4258e671bd, type: 3}
+  endScreenVolume: 0.712
 --- !u!114 &1297791247
 MonoBehaviour:
   m_ObjectHideFlags: 0
