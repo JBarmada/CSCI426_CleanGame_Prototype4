@@ -80,6 +80,7 @@ public class DayEndSummaryUI : MonoBehaviour
     private int lastSummaryDay = -1;
 
     private bool waitingForPromotionDecision = false;
+    private bool legacyReputationStarVisibleState = true;
 
     private RectLayoutState promotionStarsLayoutState;
     private bool promotionStarsLayoutCaptured;
@@ -188,6 +189,7 @@ public class DayEndSummaryUI : MonoBehaviour
     private void UpdateContinueButtonForDay(int dayNumber, bool isFinalDay)
     {
         waitingForPromotionDecision = isFinalDay && dayNumber == promotionDay;
+        UpdateLegacyReputationStarVisibility();
         RefreshPromotionStars();
         RefreshPromotionCoins();
         ShowPromotionStars(waitingForPromotionDecision);
@@ -368,6 +370,7 @@ public class DayEndSummaryUI : MonoBehaviour
         HideRoot();
         ShowPromotionStars(false);
         ShowPromotionCoins(false);
+        UpdateLegacyReputationStarVisibility();
         Time.timeScale = previousTimeScale;
     }
 
@@ -778,5 +781,19 @@ public class DayEndSummaryUI : MonoBehaviour
             targetImage.SetActive(true);
 
         resultImageRevealRoutine = null;
+    }
+
+    private void UpdateLegacyReputationStarVisibility()
+    {
+        if (reputationStar == null) return;
+
+        if (waitingForPromotionDecision)
+        {
+            legacyReputationStarVisibleState = reputationStar.gameObject.activeSelf;
+            reputationStar.gameObject.SetActive(false);
+            return;
+        }
+
+        reputationStar.gameObject.SetActive(legacyReputationStarVisibleState);
     }
 }
