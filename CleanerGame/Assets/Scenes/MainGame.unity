@@ -1868,7 +1868,7 @@ MonoBehaviour:
   reputation: {fileID: 613359826}
   logSpawnCaps: 1
   partyDayPartyCustomerChance: 1
-  partyDaySpillBaseChance: 1
+  partyDaySpillBaseChance: 0.85
   spillSpawner: {fileID: 613359821}
 --- !u!4 &461730724
 Transform:
@@ -2611,7 +2611,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c36534fee8f74f84eacc21d72527c9dd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RestaurantManager
-  dirtinessRefreshIntervalSeconds: 1.5
+  dirtinessRefreshIntervalSeconds: 2
   dayCycleSystem: {fileID: 613359823}
   spawnTuning: {fileID: 613359827}
   filthyStrikeLimit: 3
@@ -2619,9 +2619,9 @@ MonoBehaviour:
   cleanMaxCustomersCap: 14
   lightDirtinessMinSpillCount: 2
   mediumDirtinessMinSpillCount: 2
-  veryDirtyMinSpillCount: 6
-  filthyMinSpillCount: 7
-  filthySpillCountSpan: 7
+  veryDirtyMinSpillCount: 7
+  filthyMinSpillCount: 8
+  filthySpillCountSpan: 8
   lightDirtinessCustomerRange: {x: 8, y: 10}
   mediumDirtinessCustomerRange: {x: 4, y: 6}
   filthyDirtinessCustomerRange: {x: 2, y: 3}
@@ -2851,24 +2851,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CustomerSpawnTuning
   baseSpawnIntervalSeconds: 2.5
   maxActiveCustomers: 14
-  morningMultiplier: 0.35
+  morningMultiplier: 0.4
   rushMultiplier: 1.75
-  afternoonMultiplier: 0.5
+  afternoonMultiplier: 0.45
   closingMultiplier: 0
   reputation0Cap: 6
   reputation1Cap: 8
-  reputation2Cap: 12
+  reputation2Cap: 14
   reputation3Cap: 12
   reputation1SpawnBonus: 1
   reputation2SpawnBonus: 1
   reputation3SpawnBonus: 2
-  lightDirtinessMinSpillCount: 1
-  mediumDirtinessMinSpillCount: 3
-  veryDirtyMinSpillCount: 4
-  filthyMinSpillCount: 6
-  filthySpillCountSpan: 4
+  lightDirtinessMinSpillCount: 2
+  mediumDirtinessMinSpillCount: 4
+  veryDirtyMinSpillCount: 7
+  filthyMinSpillCount: 8
+  filthySpillCountSpan: 8
   cleanMaxCustomersCap: 16
-  lightDirtinessCustomerRange: {x: 9, y: 11}
+  lightDirtinessCustomerRange: {x: 9, y: 12}
   mediumDirtinessCustomerRange: {x: 8, y: 10}
   filthyDirtinessCustomerRange: {x: 1, y: 3}
   dirtyPenaltySeconds: 1
