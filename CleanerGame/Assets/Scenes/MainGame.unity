@@ -1867,6 +1867,8 @@ MonoBehaviour:
   dayCycle: {fileID: 613359823}
   reputation: {fileID: 613359826}
   logSpawnCaps: 1
+  partyDayPartyCustomerChance: 0.7
+  partyDaySpillBaseChance: 0.96
   spillSpawner: {fileID: 613359821}
 --- !u!4 &461730724
 Transform:
