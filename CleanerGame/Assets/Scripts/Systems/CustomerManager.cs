@@ -103,8 +103,18 @@ public class CustomerManager : MonoBehaviour
 
     private void TrySpawnCustomer()
     {
-        if (customerPrefab == null || spawnPoints == null || spawnPoints.Length == 0) return;
-        if (dayCycle != null && dayCycle.IsClosed) return;
+        if (customerPrefab == null || spawnPoints == null || spawnPoints.Length == 0)
+        {
+            if (logSpawnCaps)
+                Debug.Log("Spawn skip -> missing prefab or spawn points.", this);
+            return;
+        }
+        if (dayCycle != null && dayCycle.IsClosed)
+        {
+            if (logSpawnCaps)
+                Debug.Log("Spawn skip -> day is closed.", this);
+            return;
+        }
 
         int globalMax = spawnTuning == null ? 12 : spawnTuning.MaxActiveCustomers;
         int reputationCap = reputation == null
@@ -125,7 +135,12 @@ public class CustomerManager : MonoBehaviour
             int dayCount = dayCycle == null ? 0 : dayCycle.DayCount;
             Debug.Log($"Spawn cap calc -> day {dayCount}, phase {phase}, baseCap {baseCap}, dirtMult {dirtinessMultiplier:0.00}, dayMult {dayMultiplier:0.00}, cap {cap}", this);
         }
-        if (activeCustomers.Count >= cap) return;
+        if (activeCustomers.Count >= cap)
+        {
+            if (logSpawnCaps)
+                Debug.Log($"Spawn skip -> cap reached ({activeCustomers.Count}/{cap}).", this);
+            return;
+        }
 
         Transform spawnPoint = spawnPoints[Random.Range(0, spawnPoints.Length)];
         bool isPartyDay = dayCycle != null && dayCycle.DayCount == 2;
@@ -145,6 +160,8 @@ public class CustomerManager : MonoBehaviour
 
         if (!TryAssignChair(customer))
         {
+            if (logSpawnCaps)
+                Debug.Log("Spawn skip -> no available chair.", this);
             Destroy(customer.gameObject);
             return;
         }
