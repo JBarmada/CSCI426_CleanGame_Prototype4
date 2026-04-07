@@ -41,13 +41,16 @@ public class InteractiveTutorial : MonoBehaviour
     private int cleansSeen;
     private bool builtUi;
 
-    private void Awake()
+    private void OnEnable()
     {
         if (!TutorialMode.IsActive)
         {
             gameObject.SetActive(false);
             return;
         }
+
+        if (builtUi)
+            return;
 
         EnsureReferences();
         dayCycle?.ApplyTutorialRelaxation();
@@ -124,6 +127,14 @@ public class InteractiveTutorial : MonoBehaviour
             rootGroup = gameObject.AddComponent<CanvasGroup>();
         rootGroup.blocksRaycasts = true;
         rootGroup.interactable = true;
+
+        var overlayCanvas = GetComponent<Canvas>();
+        if (overlayCanvas == null)
+            overlayCanvas = gameObject.AddComponent<Canvas>();
+        overlayCanvas.overrideSorting = true;
+        overlayCanvas.sortingOrder = 4000;
+        if (GetComponent<GraphicRaycaster>() == null)
+            gameObject.AddComponent<GraphicRaycaster>();
 
         dimmer = CreateUiObject("TutorialDimmer", rect);
         var dimRect = dimmer.GetComponent<RectTransform>();
@@ -224,6 +235,8 @@ public class InteractiveTutorial : MonoBehaviour
     {
         var go = CreateUiObject(name, parent);
         var tmp = go.AddComponent<TextMeshProUGUI>();
+        if (TMP_Settings.defaultFontAsset != null)
+            tmp.font = TMP_Settings.defaultFontAsset;
         tmp.fontSize = size;
         tmp.fontStyle = style;
         tmp.alignment = align;

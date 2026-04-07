@@ -102,8 +102,7 @@ public class StartMenuUI : MonoBehaviour
     private void OnTutorialPressed()
     {
         TutorialMode.Begin();
-        foreach (InteractiveTutorial tutorial in FindObjectsByType<InteractiveTutorial>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-            tutorial.gameObject.SetActive(true);
+        ActivateAllInteractiveTutorials();
 
         HideRoot();
         if (gameFlow != null)
@@ -116,6 +115,28 @@ public class StartMenuUI : MonoBehaviour
     {
         if (gameFlow != null)
             gameFlow.QuitGame();
+    }
+
+    private void ActivateAllInteractiveTutorials()
+    {
+        var seen = new System.Collections.Generic.HashSet<InteractiveTutorial>();
+
+        Canvas canvas = GetComponentInParent<Canvas>();
+        if (canvas != null)
+        {
+            foreach (InteractiveTutorial t in canvas.GetComponentsInChildren<InteractiveTutorial>(true))
+            {
+                if (t == null) continue;
+                seen.Add(t);
+                t.gameObject.SetActive(true);
+            }
+        }
+
+        foreach (InteractiveTutorial t in FindObjectsByType<InteractiveTutorial>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            if (t == null || seen.Contains(t)) continue;
+            t.gameObject.SetActive(true);
+        }
     }
 
     private void ShowRoot()
