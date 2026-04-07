@@ -15,8 +15,7 @@ public class InteractiveTutorial : MonoBehaviour
         AfterCoins,
         Strikes,
         WinGoal,
-        Powerup,
-        Done
+        Powerup
     }
 
     [SerializeField] private GameFlowManager gameFlow;
@@ -67,7 +66,7 @@ public class InteractiveTutorial : MonoBehaviour
         gameFlow?.PauseGame();
         ShowBlocking(
             "Welcome",
-            "You are the janitor. Move with WASD (relative to the camera), sprint with Left Shift (Fire3), crouch with Left Ctrl, and zoom the view with the mouse wheel.\n\n" +
+            "You are the janitor. Move with WASD (relative to the camera), crouch with Left Ctrl, and zoom the view with the mouse wheel.\n\n" +
             "Hold Space near a spill to sweep with your broom.",
             "Got it");
     }
@@ -192,7 +191,26 @@ public class InteractiveTutorial : MonoBehaviour
         htRt.offsetMin = new Vector2(16f, 12f);
         htRt.offsetMax = new Vector2(-16f, -12f);
 
+        GameObject endRoot = CreateUiObject("EndTutorialButton", rect);
+        var endRt = endRoot.GetComponent<RectTransform>();
+        endRt.anchorMin = new Vector2(1f, 1f);
+        endRt.anchorMax = new Vector2(1f, 1f);
+        endRt.pivot = new Vector2(1f, 1f);
+        endRt.anchoredPosition = new Vector2(-18f, -18f);
+        endRt.sizeDelta = new Vector2(168f, 40f);
+        var endImg = endRoot.AddComponent<Image>();
+        endImg.color = new Color(0.22f, 0.22f, 0.28f, 0.95f);
+        endImg.raycastTarget = true;
+        Button endBtn = endRoot.AddComponent<Button>();
+        endBtn.targetGraphic = endImg;
+        endBtn.onClick.AddListener(OnEndTutorialClicked);
+        TextMeshProUGUI endLabel = CreateText("EndLabel", endRoot.transform, 17, FontStyles.Bold, TextAlignmentOptions.Center);
+        StretchFull(endLabel.GetComponent<RectTransform>());
+        endLabel.text = "End tutorial";
+        endLabel.raycastTarget = false;
+
         HideAll();
+        endRoot.SetActive(true);
     }
 
     private static GameObject CreateUiObject(string name, Transform parent)
@@ -283,44 +301,19 @@ public class InteractiveTutorial : MonoBehaviour
                 if (coinWallet != null)
                     coinWallet.DebugSetCoins(Mathf.Max(coinsToDemonstratePowerup, coinWallet.Coins));
                 gameFlow?.ResumeGame();
-                ShowHint("You have extra coins for this lesson. When the broom button lights up, click it to spend coins and sweep faster for a while.");
-                Invoke(nameof(ShowPowerupRecap), 6f);
-                break;
-
-            case Stage.Powerup:
-                CancelInvoke(nameof(ShowPowerupRecap));
-                stage = Stage.Done;
-                gameFlow?.PauseGame();
-                ShowBlocking(
-                    "Tutorial complete",
-                    "You are ready for a real shift. Play the full game from the title screen for promotion, party days, and the full day cycle.\n\n" +
-                    "This scene will reload to the title.",
-                    "Back to title");
-                break;
-
-            case Stage.Done:
-                TutorialMode.End();
-                if (gameFlow != null)
-                    gameFlow.RestartGame();
+                ShowHint(
+                    "You have extra coins for this lesson. When the broom button lights up, click it to spend coins and sweep faster for a while.\n\n" +
+                    "Each purchase uses one of your daily broom uses; they reset each restaurant day. Press End tutorial in the corner when you are done.");
                 break;
         }
     }
 
-    private void ShowPowerupRecap()
+    private void OnEndTutorialClicked()
     {
-        if (!TutorialMode.IsActive || stage != Stage.Powerup)
-            return;
-
-        gameFlow?.PauseGame();
-        ShowBlocking(
-            "Broom power-up",
-            "The broom button spends coins for a temporary faster sweep. Uses reset each restaurant day.\n\n" +
-            "In the real game, watch your balance and buy it when the rush hits.",
-            "Finish tutorial");
-    }
-
-    private void OnDestroy()
-    {
-        CancelInvoke(nameof(ShowPowerupRecap));
+        TutorialMode.End();
+        if (gameFlow == null)
+            gameFlow = GameFlowManager.Instance;
+        if (gameFlow != null)
+            gameFlow.RestartGame();
     }
 }
