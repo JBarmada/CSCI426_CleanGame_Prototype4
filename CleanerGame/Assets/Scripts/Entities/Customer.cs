@@ -5,7 +5,9 @@ public class Customer : MonoBehaviour
     [SerializeField] private float moveSpeed = 2.2f;
     [SerializeField] private float sitDurationSeconds = 8f;
     [SerializeField] private float arrivalDistance = 0.2f;
-
+    [SerializeField] private PartyCustomerEmotions emotions;
+    [SerializeField] private RegularCustomerEmotions customeremotions;
+    
     private CustomerManager manager;
     private Chair assignedChair;
     private Transform exitPoint;
@@ -18,11 +20,25 @@ public class Customer : MonoBehaviour
         Leaving
     }
 
+    private void Awake()
+    {
+        if (emotions == null)
+            emotions = GetComponentInChildren<PartyCustomerEmotions>();
+        if (customeremotions == null)
+            customeremotions = GetComponentInChildren<RegularCustomerEmotions>();
+    }
+    
     private CustomerState state;
 
     public void Initialize(CustomerManager owner)
     {
         manager = owner;
+    }
+    
+    private void Start()
+    {
+        if (customeremotions != null)
+            customeremotions.SetWhistling();
     }
 
     public void AssignChair(Chair chair, Transform exit)
@@ -51,6 +67,8 @@ public class Customer : MonoBehaviour
                 {
                     sitTimer = sitDurationSeconds;
                     state = CustomerState.Sitting;
+                    if (emotions != null)
+                        emotions.BeginSitting();
                 }
                 else
                 {
@@ -65,14 +83,24 @@ public class Customer : MonoBehaviour
         else if (state == CustomerState.Sitting)
         {
             sitTimer -= Time.deltaTime;
-
+            if (emotions != null)
+                emotions.UpdateSittingTimer(sitTimer);
             if (sitTimer <= 0f)
             {
                 // ✅ Customer stands up: spawn spill on floor near chair, then free chair
                 if (assignedChair != null)
                 {
+                    //spawning logic
+                    bool didSpill = false;
+
                     if (manager != null)
-                        manager.OnCustomerLeftChair(assignedChair.transform.position);
+                        didSpill = manager.OnCustomerLeftChair(assignedChair.transform.position);
+
+                    if (didSpill && emotions != null)
+                        emotions.BeginLeaving(); // crying ONLY if spill
+                    if (didSpill && customeremotions != null)
+                        customeremotions.ShowSpillForThreeSeconds();
+
 
                     assignedChair.CustomerLeft(); // frees occupancy
                     assignedChair = null;

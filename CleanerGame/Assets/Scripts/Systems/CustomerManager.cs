@@ -177,9 +177,13 @@ public class CustomerManager : MonoBehaviour
         activeCustomers.Add(customer);
         activeCustomerCount++;
     }
-    public void OnCustomerLeftChair(Vector3 chairPos)
+    
+    //function that spawns the spill
+    public bool OnCustomerLeftChair(Vector3 chairPos)
     {
-        if (spillSpawner == null) return;
+        if (spillSpawner == null) return false;
+
+        bool didSpill = true;
 
         bool isPartyDay = dayCycle != null && dayCycle.DayCount == 2;
         if (isPartyDay)
@@ -188,10 +192,14 @@ public class CustomerManager : MonoBehaviour
             int maxSpills = Mathf.Max(1, spillSpawner.MaxActiveSpills);
             float throttle = 1f - Mathf.Clamp01((float)activeSpills / maxSpills);
             float chance = Mathf.Clamp01(partyDaySpillBaseChance * throttle);
-            if (Random.value > chance) return;
+
+            didSpill = (Random.value <= chance);
         }
 
-        spillSpawner.TrySpawnSpillNearChair(chairPos);
+        if (didSpill)
+            spillSpawner.TrySpawnSpillNearChair(chairPos);
+
+        return didSpill;
     }
 
     private float GetCurrentSpawnIntervalSeconds()

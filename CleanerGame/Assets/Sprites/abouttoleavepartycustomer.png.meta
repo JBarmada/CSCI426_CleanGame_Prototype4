@@ -1,0 +1,416 @@
+fileFormatVersion: 2
+guid: 89ed2e321b29a4fa0aae37f81e965bce
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 595604422332713928
+    second: abouttoleavepartycustomer_0
+  - first:
+      213: -6598090857846674555
+    second: abouttoleavepartycustomer_1
+  - first:
+      213: -5098481580230435820
+    second: abouttoleavepartycustomer_2
+  - first:
+      213: -1553792378144354948
+    second: abouttoleavepartycustomer_3
+  - first:
+      213: 5056560460585784256
+    second: abouttoleavepartycustomer_4
+  - first:
+      213: -466881171985179008
+    second: abouttoleavepartycustomer_5
+  - first:
+      213: -2183592564125615503
+    second: abouttoleavepartycustomer_6
+  - first:
+      213: -750862270070496821
+    second: abouttoleavepartycustomer_7
+  - first:
+      213: -1700865792642677930
+    second: abouttoleavepartycustomer_8
+  - first:
+      213: -6571539517518479607
+    second: abouttoleavepartycustomer_9
+  - first:
+      213: 732746707032619566
+    second: abouttoleavepartycustomer_10
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 1
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 0
+  spriteTessellationDetail: -1
+  textureType: 0
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: abouttoleavepartycustomer_0
+      rect:
+        serializedVersion: 2
+        x: 150
+        y: 339
+        width: 58
+        height: 49
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8cb0bc30113044800800000000000000
+      internalID: 595604422332713928
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: abouttoleavepartycustomer_1
+      rect:
+        serializedVersion: 2
+        x: 286
+        y: 362
+        width: 64
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 58beb4ea25fde64a0800000000000000
+      internalID: -6598090857846674555
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: abouttoleavepartycustomer_2
+      rect:
+        serializedVersion: 2
+        x: 107
+        y: 280
+        width: 20
+        height: 35
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 41c1e74040e8e39b0800000000000000
+      internalID: -5098481580230435820
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: abouttoleavepartycustomer_3
+      rect:
+        serializedVersion: 2
+        x: 118
+        y: 284
+        width: 15
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c7d0ffd7012df6ae0800000000000000
+      internalID: -1553792378144354948
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: abouttoleavepartycustomer_4
+      rect:
+        serializedVersion: 2
+        x: 157
+        y: 290
+        width: 67
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0c35086b2f28c2640800000000000000
+      internalID: 5056560460585784256
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: abouttoleavepartycustomer_5
+      rect:
+        serializedVersion: 2
+        x: 267
+        y: 311
+        width: 80
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 08e51873c0e4589f0800000000000000
+      internalID: -466881171985179008
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: abouttoleavepartycustomer_6
+      rect:
+        serializedVersion: 2
+        x: 370
+        y: 300
+        width: 15
+        height: 30
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 17abb11d12252b1e0800000000000000
+      internalID: -2183592564125615503
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: abouttoleavepartycustomer_7
+      rect:
+        serializedVersion: 2
+        x: 380
+        y: 301
+        width: 18
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bc1643d5eb66495f0800000000000000
+      internalID: -750862270070496821
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: abouttoleavepartycustomer_8
+      rect:
+        serializedVersion: 2
+        x: 390
+        y: 302
+        width: 16
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6538beab29f4568e0800000000000000
+      internalID: -1700865792642677930
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: abouttoleavepartycustomer_9
+      rect:
+        serializedVersion: 2
+        x: 131
+        y: 285
+        width: 13
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 90f7ed650a33dc4a0800000000000000
+      internalID: -6571539517518479607
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: abouttoleavepartycustomer_10
+      rect:
+        serializedVersion: 2
+        x: 139
+        y: 35
+        width: 263
+        height: 248
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e2a340f6f3d3b2a00800000000000000
+      internalID: 732746707032619566
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      abouttoleavepartycustomer_0: 595604422332713928
+      abouttoleavepartycustomer_1: -6598090857846674555
+      abouttoleavepartycustomer_10: 732746707032619566
+      abouttoleavepartycustomer_2: -5098481580230435820
+      abouttoleavepartycustomer_3: -1553792378144354948
+      abouttoleavepartycustomer_4: 5056560460585784256
+      abouttoleavepartycustomer_5: -466881171985179008
+      abouttoleavepartycustomer_6: -2183592564125615503
+      abouttoleavepartycustomer_7: -750862270070496821
+      abouttoleavepartycustomer_8: -1700865792642677930
+      abouttoleavepartycustomer_9: -6571539517518479607
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

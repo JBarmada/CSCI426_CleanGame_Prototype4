@@ -12,6 +12,8 @@ public class CustomerPartyAI : MonoBehaviour
     [Header("Setup")]
     [SerializeField] private bool disableCustomerComponent = true;
 
+    [SerializeField] private PartyCustomerEmotions emotions;
+    
     private CustomerManager manager;
     private Chair assignedChair;
     private Chair reservedChair;
@@ -38,7 +40,8 @@ public class CustomerPartyAI : MonoBehaviour
         customerProxy = GetComponent<Customer>();
         if (customerProxy != null && disableCustomerComponent)
             customerProxy.enabled = false;
-
+        if (emotions == null)
+            emotions = GetComponentInChildren<PartyCustomerEmotions>();
         EnableRenderers();
 
         chairs = FindObjectsByType<Chair>(FindObjectsSortMode.None);
@@ -114,6 +117,8 @@ public class CustomerPartyAI : MonoBehaviour
                 reservedChair = null;
                 shuffleTimer = Random.Range(shuffleSecondsRange.x, shuffleSecondsRange.y);
                 state = PartyState.Sitting;
+                if (emotions != null)
+                    emotions.BeginSitting();
             }
             else
             {
@@ -127,12 +132,21 @@ public class CustomerPartyAI : MonoBehaviour
     private void UpdateSitting()
     {
         shuffleTimer -= Time.deltaTime;
+        if (emotions != null)
+            emotions.UpdateSittingTimer(shuffleTimer);
+        
         if (shuffleTimer > 0f) return;
-
+        
         if (assignedChair != null)
         {
+            //calls the spill
+            bool didSpill = false;
+
             if (manager != null)
-                manager.OnCustomerLeftChair(assignedChair.transform.position);
+                didSpill = manager.OnCustomerLeftChair(assignedChair.transform.position);
+
+            if (didSpill && emotions != null)
+                emotions.BeginLeaving();
 
             assignedChair.CustomerLeft();
             assignedChair = null;

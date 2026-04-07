@@ -1,10 +1,16 @@
 fileFormatVersion: 2
-guid: 67a2d8d678f823a47857f58438c7664a
+guid: a2fa6578961f44321a0c64322a058ae1
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -4296760176796813495
-    second: face_0
+      213: 6697033611281275581
+    second: oppsiecustomer_0
+  - first:
+      213: 3135295837009479713
+    second: oppsiecustomer_1
+  - first:
+      213: 3126943743332463084
+    second: oppsiecustomer_2
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -113,13 +119,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: face_0
+      name: oppsiecustomer_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 0
-        width: 1472
-        height: 900
+        x: 238
+        y: 401
+        width: 63
+        height: 15
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -128,8 +134,52 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 9473bf86267de54c0800000000000000
-      internalID: -4296760176796813495
+      spriteID: dba95494694a0fc50800000000000000
+      internalID: 6697033611281275581
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: oppsiecustomer_1
+      rect:
+        serializedVersion: 2
+        x: 216
+        y: 243
+        width: 76
+        height: 139
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 12806b6c3fec28b20800000000000000
+      internalID: 3135295837009479713
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: oppsiecustomer_2
+      rect:
+        serializedVersion: 2
+        x: 245
+        y: 154
+        width: 27
+        height: 26
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ce136fd64c2256b20800000000000000
+      internalID: 3126943743332463084
       vertices: []
       indices: 
       edges: []
@@ -148,7 +198,9 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      face_0: -4296760176796813495
+      oppsiecustomer_0: 6697033611281275581
+      oppsiecustomer_1: 3135295837009479713
+      oppsiecustomer_2: 3126943743332463084
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
