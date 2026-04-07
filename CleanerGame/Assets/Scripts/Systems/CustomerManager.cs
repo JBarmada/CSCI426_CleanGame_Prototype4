@@ -212,6 +212,9 @@ public class CustomerManager : MonoBehaviour
 
         interval = Mathf.Max(0.1f, interval + dirtinessPenalty);
 
+        if (TutorialMode.IsActive)
+            interval *= TutorialMode.CustomerSpawnIntervalMultiplier;
+
         return interval;
     }
 

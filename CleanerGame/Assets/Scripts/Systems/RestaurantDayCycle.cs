@@ -253,4 +253,15 @@ public class RestaurantDayCycle : MonoBehaviour
         afternoonSeconds *= scale;
         closingSeconds *= scale;
     }
+
+    /// <summary>
+    /// Keeps the tutorial session from ending the campaign or showing multi-day promotion flow.
+    /// </summary>
+    public void ApplyTutorialRelaxation()
+    {
+        infiniteDays = true;
+        pauseBetweenDays = false;
+        dayLengthSeconds = Mathf.Max(dayLengthSeconds, 180f);
+        NormalizeDaySegments();
+    }
 }
