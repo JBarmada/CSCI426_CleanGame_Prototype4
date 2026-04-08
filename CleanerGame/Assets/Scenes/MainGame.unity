@@ -11792,7 +11792,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &2100010101
 RectTransform:
   m_ObjectHideFlags: 0
@@ -11829,7 +11829,7 @@ MonoBehaviour:
   spillTracker: {fileID: 613359825}
   coinWallet: {fileID: 1365000191}
   restaurantManager: {fileID: 613359819}
-  coinsToDemonstratePowerup: 8
+  coinsToDemonstratePowerup: 10
 --- !u!1001 &2104278943
 PrefabInstance:
   m_ObjectHideFlags: 0
