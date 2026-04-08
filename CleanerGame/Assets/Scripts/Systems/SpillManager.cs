@@ -20,14 +20,23 @@ public class SpillManager : MonoBehaviour
     [SerializeField] private float day2SweepsToCleanMultiplier = 0.75f;
     [SerializeField] private RestaurantDayCycle dayCycle;
 
-    [Header("Fade")]
+    [Header("Visuals")]
     [SerializeField] private SpriteRenderer spriteRenderer; // assign, or auto-find
+    [SerializeField] private SpriteRenderer glowRenderer;   // child named "glow"
     [SerializeField] private bool destroyRoot = false;      // true if this script is on a child trigger
+
+    [Header("Glow Pulse")]
+    [SerializeField] private float pulseSpeed = 2f;
+    [SerializeField] private float pulseMinAlpha = 0.3f;
+
+    [Header("Particles")]
+    [SerializeField] private ParticleSystem spillParticles;
 
     private bool playerInRange;
     private float sweepProgress; // counts "motions" continuously
     private Collider col;
     private bool cleaned;
+    private bool particlesStopped;
 
     private void Awake()
     {
@@ -35,7 +44,17 @@ public class SpillManager : MonoBehaviour
         col.isTrigger = true;
 
         if (spriteRenderer == null)
-            spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+            spriteRenderer = GetComponent<SpriteRenderer>();
+
+        if (glowRenderer == null)
+        {
+            var glowTransform = transform.Find("glow");
+            if (glowTransform != null)
+                glowRenderer = glowTransform.GetComponent<SpriteRenderer>();
+        }
+
+        if (spillParticles == null)
+            spillParticles = GetComponentInChildren<ParticleSystem>();
 
         if (dayCycle == null)
             dayCycle = FindFirstObjectByType<RestaurantDayCycle>();
@@ -46,6 +65,9 @@ public class SpillManager : MonoBehaviour
 
     private void Update()
     {
+        // Always update glow pulse even when player isn't cleaning
+        UpdateGlowPulse();
+
         if (!playerInRange || cleaned) return;
 
         if (Input.GetKey(sweepKey))
@@ -53,6 +75,13 @@ public class SpillManager : MonoBehaviour
             float mult = BroomPowerupSystem.Instance != null ? BroomPowerupSystem.Instance.CurrentMultiplier : 1f;
             sweepProgress += (sweepsPerSecond * mult) * Time.deltaTime;
             UpdateVisual();
+
+            // Stop particles as soon as cleaning begins
+            if (!particlesStopped && spillParticles != null)
+            {
+                spillParticles.Stop();
+                particlesStopped = true;
+            }
 
             if (sweepProgress >= GetEffectiveSweepsToClean())
             {
@@ -69,8 +98,6 @@ public class SpillManager : MonoBehaviour
         }
     }
 
-
-
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player"))
@@ -81,6 +108,30 @@ public class SpillManager : MonoBehaviour
     {
         if (other.CompareTag("Player"))
             playerInRange = false;
+    }
+
+    private void UpdateGlowPulse()
+    {
+        if (glowRenderer == null || cleaned) return;
+
+        float t = Mathf.Clamp01(sweepProgress / GetEffectiveSweepsToClean());
+
+        if (t <= 0f)
+        {
+            // Idle: pulse alpha between pulseMinAlpha and 1
+            float pulse = Mathf.PingPong(Time.time * pulseSpeed, 1f);
+            float alpha = Mathf.Lerp(pulseMinAlpha, 1f, pulse);
+            var c = glowRenderer.color;
+            c.a = alpha;
+            glowRenderer.color = c;
+        }
+        else
+        {
+            // Cleaning in progress: fade glow out with main sprite
+            var c = glowRenderer.color;
+            c.a = 1f - t;
+            glowRenderer.color = c;
+        }
     }
 
     private void UpdateVisual()
@@ -94,7 +145,12 @@ public class SpillManager : MonoBehaviour
         var c = spriteRenderer.color;
         c.a = alpha;
         spriteRenderer.color = c;
+
+        // Shrink the spill toward 50% as it gets cleaned
+        float scale = Mathf.Lerp(1f, 0.5f, t);
+        transform.localScale = Vector3.one * scale;
     }
+
     private void AwardCoins()
     {
         if (coinsPerClean <= 0) return;
