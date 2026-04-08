@@ -144,10 +144,12 @@ public class RestaurantDayCycle : MonoBehaviour
         if (allowGameOver && isFinalDay)
             gameOver = true;
 
+        bool hasDayEndedListeners = DayEnded != null;
+
         SetPhase(DayPhase.Closing);
         DayEnded?.Invoke(dayCount, isFinalDay);
 
-        if (pauseBetweenDays)
+        if (pauseBetweenDays && hasDayEndedListeners)
             waitingForContinue = true;
         else if (!isFinalDay)
             StartNextDay();
