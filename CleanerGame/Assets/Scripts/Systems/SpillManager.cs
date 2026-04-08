@@ -37,9 +37,11 @@ public class SpillManager : MonoBehaviour
     private Collider col;
     private bool cleaned;
     private bool particlesStopped;
+    private Vector3 initialScale;
 
     private void Awake()
     {
+        initialScale = transform.localScale;
         col = GetComponent<Collider>();
         col.isTrigger = true;
 
@@ -146,9 +148,8 @@ public class SpillManager : MonoBehaviour
         c.a = alpha;
         spriteRenderer.color = c;
 
-        // Shrink the spill toward 50% as it gets cleaned
-        float scale = Mathf.Lerp(1f, 0.5f, t);
-        transform.localScale = Vector3.one * scale;
+        // Shrink the spill toward 50% of its original size as it gets cleaned
+        transform.localScale = initialScale * Mathf.Lerp(1f, 0.5f, t);
     }
 
     private void AwardCoins()
