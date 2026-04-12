@@ -7,6 +7,7 @@ public class SpillManager : MonoBehaviour
     [SerializeField] private KeyCode sweepKey = KeyCode.Space;
     [SerializeField] private float sweepsPerSecond = 3f;   // 3 sweep motions / sec
     [SerializeField] private int sweepsToClean = 3;        // total motions needed (3 @ 3/sec = 1s)
+    [SerializeField] private float cleaningRadius = 1.15f;
 
     [Header("Coins")]
     [SerializeField] private int coinsPerClean = 1;
@@ -32,12 +33,24 @@ public class SpillManager : MonoBehaviour
     [Header("Particles")]
     [SerializeField] private ParticleSystem spillParticles;
 
+    [Header("Completion Feedback")]
+    [SerializeField] private GameObject cleanBurstPrefab;
+    [SerializeField] private float cleanBurstLifetime = 1f;
+    [SerializeField] private AudioClip cleanCompleteClip;
+    [Range(0f, 1f)]
+    [SerializeField] private float cleanCompleteVolume = 0.8f;
+    [SerializeField] private float cleanPunchScale = 1.35f;
+    [SerializeField] private float cleanFinishSeconds = 0.12f;
+
     private bool playerInRange;
     private float sweepProgress; // counts "motions" continuously
     private Collider col;
     private bool cleaned;
     private bool particlesStopped;
     private Vector3 initialScale;
+    private Coroutine cleanRoutine;
+    private Transform playerTransform;
+    private Transform cleaningAnchor;
 
     private void Awake()
     {
@@ -61,6 +74,13 @@ public class SpillManager : MonoBehaviour
         if (dayCycle == null)
             dayCycle = FindFirstObjectByType<RestaurantDayCycle>();
 
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null)
+        {
+            playerTransform = player.transform;
+            ResolveCleaningAnchor();
+        }
+
         sweepProgress = 0f;
         UpdateVisual();
     }
@@ -69,6 +89,8 @@ public class SpillManager : MonoBehaviour
     {
         // Always update glow pulse even when player isn't cleaning
         UpdateGlowPulse();
+
+        UpdatePlayerCleaningRange();
 
         if (!playerInRange || cleaned) return;
 
@@ -89,27 +111,15 @@ public class SpillManager : MonoBehaviour
             {
                 cleaned = true;
                 AwardCoins();
+                playerInRange = false;
+
+                if (col != null)
+                    col.enabled = false;
 
                 Debug.Log($"[Spill] Cleaned with multiplier {mult:F2}x");
-
-                if (destroyRoot && transform.parent != null)
-                    Destroy(transform.parent.gameObject);
-                else
-                    Destroy(gameObject);
+                cleanRoutine = StartCoroutine(PlayCleanCompletion());
             }
         }
-    }
-
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag("Player"))
-            playerInRange = true;
-    }
-
-    private void OnTriggerExit(Collider other)
-    {
-        if (other.CompareTag("Player"))
-            playerInRange = false;
     }
 
     private void UpdateGlowPulse()
@@ -140,16 +150,84 @@ public class SpillManager : MonoBehaviour
     {
         if (spriteRenderer == null) return;
 
-        // Full alpha at 0 progress, fades out as progress approaches sweepsToClean
         float t = Mathf.Clamp01(sweepProgress / GetEffectiveSweepsToClean());
-        float alpha = 1f - t;
-
-        var c = spriteRenderer.color;
-        c.a = alpha;
-        spriteRenderer.color = c;
 
         // Shrink the spill toward 50% of its original size as it gets cleaned
         transform.localScale = initialScale * Mathf.Lerp(1f, 0.5f, t);
+    }
+
+    private void UpdatePlayerCleaningRange()
+    {
+        if (playerTransform == null)
+        {
+            GameObject player = GameObject.FindGameObjectWithTag("Player");
+            if (player != null)
+            {
+                playerTransform = player.transform;
+                ResolveCleaningAnchor();
+            }
+        }
+
+        if (playerTransform == null)
+        {
+            playerInRange = false;
+            return;
+        }
+
+        if (cleaningAnchor == null)
+            ResolveCleaningAnchor();
+
+        Transform rangeSource = cleaningAnchor != null ? cleaningAnchor : playerTransform;
+        Vector3 playerPlanar = new Vector3(rangeSource.position.x, 0f, rangeSource.position.z);
+        Vector3 spillPlanar = new Vector3(transform.position.x, 0f, transform.position.z);
+        playerInRange = Vector3.Distance(playerPlanar, spillPlanar) <= cleaningRadius;
+    }
+
+    private void ResolveCleaningAnchor()
+    {
+        if (ThirdPersonController.Instance != null && ThirdPersonController.Instance.broom != null)
+        {
+            cleaningAnchor = ThirdPersonController.Instance.broom;
+            return;
+        }
+
+        cleaningAnchor = playerTransform;
+    }
+
+    private System.Collections.IEnumerator PlayCleanCompletion()
+    {
+        if (cleanBurstPrefab != null)
+        {
+            GameObject fx = Instantiate(cleanBurstPrefab, transform.position, transform.rotation);
+            if (cleanBurstLifetime > 0f)
+                Destroy(fx, cleanBurstLifetime);
+        }
+
+        if (cleanCompleteClip != null)
+            AudioSource.PlayClipAtPoint(cleanCompleteClip, transform.position, cleanCompleteVolume);
+
+        float duration = Mathf.Max(0.01f, cleanFinishSeconds);
+        Vector3 startScale = transform.localScale;
+        Vector3 peakScale = startScale * Mathf.Max(1f, cleanPunchScale);
+
+        for (float elapsed = 0f; elapsed < duration; elapsed += Time.deltaTime)
+        {
+            float t = Mathf.Clamp01(elapsed / duration);
+            float scaleT = Mathf.Sin(t * Mathf.PI);
+            transform.localScale = Vector3.Lerp(startScale, peakScale, scaleT);
+
+            yield return null;
+        }
+
+        DestroySelf();
+    }
+
+    private void DestroySelf()
+    {
+        if (destroyRoot && transform.parent != null)
+            Destroy(transform.parent.gameObject);
+        else
+            Destroy(gameObject);
     }
 
     private void AwardCoins()

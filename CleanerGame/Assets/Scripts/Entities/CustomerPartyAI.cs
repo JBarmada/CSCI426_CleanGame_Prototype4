@@ -5,6 +5,7 @@ public class CustomerPartyAI : MonoBehaviour
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 2.2f;
     [SerializeField] private float arrivalDistance = 0.2f;
+    [SerializeField] private CrowdContactSettings crowdContact = new CrowdContactSettings();
 
     [Header("Shuffle Timing")]
     [SerializeField] private Vector2 shuffleSecondsRange = new Vector2(3f, 8f);
@@ -20,6 +21,7 @@ public class CustomerPartyAI : MonoBehaviour
     private float shuffleTimer;
     private Customer customerProxy;
     private Chair[] chairs;
+    private SphereCollider crowdCollider;
 
     private enum PartyState
     {
@@ -45,6 +47,7 @@ public class CustomerPartyAI : MonoBehaviour
         EnableRenderers();
 
         chairs = FindObjectsByType<Chair>(FindObjectsSortMode.None);
+        crowdCollider = GetComponent<SphereCollider>();
     }
 
     private void EnableRenderers()
@@ -107,7 +110,7 @@ public class CustomerPartyAI : MonoBehaviour
         }
 
         Vector3 target = reservedChair.GetSeatPosition();
-        transform.position = Vector3.MoveTowards(transform.position, target, moveSpeed * Time.deltaTime);
+        CustomerCrowdUtility.MoveTowardsWithCrowdContact(transform, crowdCollider, target, moveSpeed, crowdContact, false);
 
         if (Vector3.Distance(transform.position, target) <= arrivalDistance)
         {

@@ -55,8 +55,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 7.13, y: 4.13, z: 10}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 7.1300006, y: 4.887593, z: 10}
+  m_Center: {x: 0, y: 0.37879637, z: 0}
 --- !u!212 &2309276128579276440
 SpriteRenderer:
   serializedVersion: 2
@@ -131,6 +131,7 @@ MonoBehaviour:
   sweepKey: 32
   sweepsPerSecond: 3
   sweepsToClean: 3
+  cleaningRadius: 1.5
   coinsPerClean: 1
   coinWallet: {fileID: 0}
   spillTracker: {fileID: 0}
@@ -144,6 +145,12 @@ MonoBehaviour:
   pulseSpeed: 2
   pulseMinAlpha: 0.3
   spillParticles: {fileID: 8829695151584423245}
+  cleanBurstPrefab: {fileID: 141433446842962269, guid: 9fe8f8b3288e45a44af36ff8aa04486e, type: 3}
+  cleanBurstLifetime: 1
+  cleanCompleteClip: {fileID: 8300000, guid: fd6236556ff2ad640b9e29c09a08b787, type: 3}
+  cleanCompleteVolume: 0.8
+  cleanPunchScale: 1.35
+  cleanFinishSeconds: 0.12
 --- !u!1 &4996441069677199301
 GameObject:
   m_ObjectHideFlags: 0
