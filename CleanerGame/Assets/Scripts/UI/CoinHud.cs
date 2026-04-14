@@ -7,12 +7,12 @@ public class CoinHud : MonoBehaviour
 {
     [SerializeField] private TMP_Text coinText;
     [SerializeField] private CoinWallet wallet;
+    [SerializeField] private RestaurantDayCycle dayCycle;
     [SerializeField] private Image coinIcon;
     [SerializeField] private float coinPulseScale = 1.2f;
     [SerializeField] private float coinPulseDuration = 0.12f;
     [SerializeField] private float textPulseScale = 1.15f;
 
-    private int currentCoins;
     private int lastWalletCoins;
     private Coroutine coinPulseRoutine;
     private Vector3 coinIconBaseScale;
@@ -31,22 +31,23 @@ public class CoinHud : MonoBehaviour
 
         if (coinText != null)
             coinTextBaseScale = coinText.transform.localScale;
+
+        if (dayCycle == null)
+            dayCycle = FindFirstObjectByType<RestaurantDayCycle>();
     }
 
     private void OnEnable()
     {
         ResolveWallet();
+        ResolveDayCycle();
         if (wallet != null)
         {
             wallet.CoinsChanged += HandleCoinsChanged;
             lastWalletCoins = wallet.Coins;
-            currentCoins = 0;
         }
-        else
-        {
-            lastWalletCoins = 0;
-            currentCoins = 0;
-        }
+
+        if (dayCycle != null)
+            dayCycle.DayStarted += HandleDayStarted;
 
         Refresh();
     }
@@ -55,6 +56,9 @@ public class CoinHud : MonoBehaviour
     {
         if (wallet != null)
             wallet.CoinsChanged -= HandleCoinsChanged;
+
+        if (dayCycle != null)
+            dayCycle.DayStarted -= HandleDayStarted;
 
         if (coinPulseRoutine != null)
         {
@@ -71,14 +75,17 @@ public class CoinHud : MonoBehaviour
 
     private void HandleCoinsChanged(int newAmount)
     {
-        int delta = newAmount - lastWalletCoins;
-        if (delta > 0)
+        if (newAmount > lastWalletCoins)
         {
             PlayCoinPulse();
-            currentCoins += delta;
         }
 
         lastWalletCoins = newAmount;
+        Refresh();
+    }
+
+    private void HandleDayStarted(int _)
+    {
         Refresh();
     }
 
@@ -88,10 +95,16 @@ public class CoinHud : MonoBehaviour
         wallet = FindFirstObjectByType<CoinWallet>();
     }
 
+    private void ResolveDayCycle()
+    {
+        if (dayCycle != null) return;
+        dayCycle = FindFirstObjectByType<RestaurantDayCycle>();
+    }
+
     private void Refresh()
     {
         if (coinText == null) return;
-        coinText.text = currentCoins.ToString();
+        coinText.text = wallet == null ? "0" : wallet.CoinsEarnedToday.ToString();
     }
 
     private void PlayCoinPulse()
