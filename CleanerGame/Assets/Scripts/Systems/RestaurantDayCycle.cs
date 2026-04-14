@@ -58,6 +58,10 @@ public class RestaurantDayCycle : MonoBehaviour
     private void Update()
     {
         UpdateDayCycle(Time.deltaTime);
+
+        // Debug: Press K to skip to Day 3
+        if (Input.GetKeyDown(KeyCode.K))
+            DebugSkipToDay3();
     }
 
     public float GetSpawnMultiplier()
@@ -265,5 +269,18 @@ public class RestaurantDayCycle : MonoBehaviour
         pauseBetweenDays = false;
         dayLengthSeconds = Mathf.Max(dayLengthSeconds, 180f);
         NormalizeDaySegments();
+    }
+
+    /// <summary>
+    /// Debug method to skip to Day 3. Right-click the RestaurantDayCycle component in the Inspector
+    /// and select "Debug / Skip to Day 3" from the context menu.
+    /// </summary>
+    [ContextMenu("Debug / Skip to Day 3")]
+    public void DebugSkipToDay3()
+    {
+        dayCount = 2; // Set to 2 so the next call increments to 3
+        waitingForContinue = false;
+        StartNextDay();
+        Debug.Log("[DayCycle Debug] Skipped to Day 3");
     }
 }
