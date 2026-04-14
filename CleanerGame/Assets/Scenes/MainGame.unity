@@ -1185,7 +1185,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 55}
-  m_SizeDelta: {x: 407.269, y: 91.193}
+  m_SizeDelta: {x: 1278.1, y: 91.193}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &273753871
 MonoBehaviour:
@@ -1205,9 +1205,9 @@ MonoBehaviour:
   rushText: Rush Hour
   afternoonText: Afternoon Slow Down
   closingText: Closing Time
-  morningColor: {r: 0.85, g: 0.9, b: 0.6, a: 1}
-  rushColor: {r: 0.9, g: 0.65, b: 0.2, a: 1}
-  afternoonColor: {r: 0.75, g: 0.6, b: 0.4, a: 1}
+  morningColor: {r: 0.26254895, g: 0.6581276, b: 0.9433962, a: 1}
+  rushColor: {r: 0.8679245, g: 0.60883707, b: 0.1432894, a: 1}
+  afternoonColor: {r: 0.76766974, g: 0.53092736, b: 0.9150943, a: 1}
   closingColor: {r: 0.9, g: 0.35, b: 0.3, a: 1}
   fadeInSeconds: 0.5
   holdSeconds: 1.5
@@ -1234,8 +1234,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: New Text
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8a89fa14b10d46a99122fd4f73fca9a2, type: 2}
-  m_sharedMaterial: {fileID: 2100000, guid: a00013af81304728b2be1f4309ee2433, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 286665f3ce65d49edbdd8ec8251d518c, type: 2}
+  m_sharedMaterial: {fileID: -4651083933152557258, guid: 286665f3ce65d49edbdd8ec8251d518c, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1259,13 +1259,13 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 50
-  m_fontSizeBase: 50
+  m_fontSize: 166.6
+  m_fontSizeBase: 166.6
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 1
+  m_fontStyle: 17
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
