@@ -301,10 +301,11 @@ public class ThirdPersonController : MonoBehaviour
 
         float sweepMultiplier = isSweeping ? Mathf.Clamp(sweepMoveMultiplier, 0.1f, 1f) : 1f;
         float slipControl = IsSlipping ? Mathf.Clamp01(slipControlMultiplier) : 1f;
+        float sneakerMult = SneakerPowerupSystem.Instance != null ? SneakerPowerupSystem.Instance.CurrentMultiplier : 1f;
 
         // Direction movement
-        float directionX = inputHorizontal * (velocity + velocityAdittion) * sweepMultiplier * slipControl * Time.deltaTime;
-        float directionZ = inputVertical * (velocity + velocityAdittion) * sweepMultiplier * slipControl * Time.deltaTime;
+        float directionX = inputHorizontal * (velocity + velocityAdittion) * sweepMultiplier * slipControl * sneakerMult * Time.deltaTime;
+        float directionZ = inputVertical * (velocity + velocityAdittion) * sweepMultiplier * slipControl * sneakerMult * Time.deltaTime;
         float directionY = 0;
 
         // Add gravity to Y axis

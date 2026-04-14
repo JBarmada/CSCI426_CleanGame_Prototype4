@@ -35,7 +35,7 @@ public class DayEndSummaryUI : MonoBehaviour
     [SerializeField] private float resultImageImpactShakeStrength = 16f;
 
     [Header("Promotion Rules")]
-    [SerializeField] private int promotionDay = 3;
+    [SerializeField] private int promotionDay = 4;
     [SerializeField] private int reputationRequiredToPromote = 3;
     [SerializeField] private int promotionCostCoins = 25;
     [SerializeField] private int reputationStarCostCoins = 17;

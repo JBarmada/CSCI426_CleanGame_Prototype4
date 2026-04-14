@@ -18,7 +18,7 @@ public class RestaurantDayCycle : MonoBehaviour
     [SerializeField] private float afternoonSeconds = 15f;
     [SerializeField] private float closingSeconds = 5f;
     [SerializeField] private bool infiniteDays = true;
-    [SerializeField] private int maxDays = 3;
+    [SerializeField] private int maxDays = 4;
     [SerializeField] private bool pauseBetweenDays = true;
     [SerializeField] private CustomerSpawnTuning spawnTuning;
 
