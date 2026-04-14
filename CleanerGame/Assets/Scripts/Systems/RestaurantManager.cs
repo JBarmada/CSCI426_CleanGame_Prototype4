@@ -270,22 +270,26 @@ public class RestaurantManager : MonoBehaviour
 
     private int GetLightDirtinessMinSpillCount()
     {
-        return spawnTuning == null ? lightDirtinessMinSpillCount : spawnTuning.LightDirtinessMinSpillCount;
+        int baseValue = spawnTuning == null ? lightDirtinessMinSpillCount : spawnTuning.LightDirtinessMinSpillCount;
+        return baseValue + GetDay1DirtinessThresholdBonus();
     }
 
     private int GetMediumDirtinessMinSpillCount()
     {
-        return spawnTuning == null ? mediumDirtinessMinSpillCount : spawnTuning.MediumDirtinessMinSpillCount;
+        int baseValue = spawnTuning == null ? mediumDirtinessMinSpillCount : spawnTuning.MediumDirtinessMinSpillCount;
+        return baseValue + GetDay1DirtinessThresholdBonus();
     }
 
     private int GetVeryDirtyMinSpillCount()
     {
-        return spawnTuning == null ? veryDirtyMinSpillCount : spawnTuning.VeryDirtyMinSpillCount;
+        int baseValue = spawnTuning == null ? veryDirtyMinSpillCount : spawnTuning.VeryDirtyMinSpillCount;
+        return baseValue + GetDay1DirtinessThresholdBonus();
     }
 
     private int GetFilthyMinSpillCount()
     {
-        return spawnTuning == null ? filthyMinSpillCount : spawnTuning.FilthyMinSpillCount;
+        int baseValue = spawnTuning == null ? filthyMinSpillCount : spawnTuning.FilthyMinSpillCount;
+        return baseValue + GetDay1DirtinessThresholdBonus();
     }
 
     private int GetFilthySpillCountSpan()
@@ -318,5 +322,13 @@ public class RestaurantManager : MonoBehaviour
 
         float t = Mathf.InverseLerp(min, max, value);
         return Mathf.RoundToInt(Mathf.Lerp(minValue, maxValue, t));
+    }
+
+    private int GetDay1DirtinessThresholdBonus()
+    {
+        if (dayCycleSystem == null || dayCycleSystem.DayCount != 1 || spawnTuning == null)
+            return 0;
+
+        return Mathf.Max(0, spawnTuning.Day1DirtinessThresholdBonusSpills);
     }
 }

@@ -7,6 +7,9 @@ public class CoinWallet : MonoBehaviour
     [SerializeField] private int startingCoins = 0;
     [SerializeField] private bool dontDestroyOnLoad = false;
 
+    [Header("Day Tracking")]
+    [SerializeField] private RestaurantDayCycle dayCycle;
+
     [Header("Audio")]
     [SerializeField] private AudioSource audioSource;
     [SerializeField] private AudioClip coinClip;
@@ -16,11 +19,13 @@ public class CoinWallet : MonoBehaviour
     public static CoinWallet Instance { get; private set; }
 
     public int Coins => coins;
+    public int CoinsEarnedToday => coinsEarnedToday;
 
     // ✅ UI + systems can subscribe to this
     public event Action<int> CoinsChanged;
 
     private int coins;
+    private int coinsEarnedToday;
 
     private void Awake()
     {
@@ -32,6 +37,10 @@ public class CoinWallet : MonoBehaviour
 
         Instance = this;
         coins = Mathf.Max(0, startingCoins);
+        coinsEarnedToday = 0;
+
+        if (dayCycle == null)
+            dayCycle = FindFirstObjectByType<RestaurantDayCycle>();
 
         if (dontDestroyOnLoad)
             DontDestroyOnLoad(gameObject);
@@ -48,7 +57,16 @@ public class CoinWallet : MonoBehaviour
 
     private void Start()
     {
+        if (dayCycle != null)
+            dayCycle.DayStarted += HandleDayStarted;
+
         CoinsChanged?.Invoke(coins);
+    }
+
+    private void OnDestroy()
+    {
+        if (dayCycle != null)
+            dayCycle.DayStarted -= HandleDayStarted;
     }
 
     public void AddCoins(int amount)
@@ -56,6 +74,7 @@ public class CoinWallet : MonoBehaviour
         if (amount <= 0) return;
 
         coins += amount;
+        coinsEarnedToday += amount;
         CoinsChanged?.Invoke(coins);
 
         if (coinClip != null && audioSource != null)
@@ -85,5 +104,10 @@ public class CoinWallet : MonoBehaviour
     {
         coins = Mathf.Max(0, amount);
         CoinsChanged?.Invoke(coins);
+    }
+
+    private void HandleDayStarted(int _)
+    {
+        coinsEarnedToday = 0;
     }
 }

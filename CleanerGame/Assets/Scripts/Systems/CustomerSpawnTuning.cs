@@ -6,6 +6,11 @@ public class CustomerSpawnTuning : MonoBehaviour
     [SerializeField] private float baseSpawnIntervalSeconds = 6f;
     [SerializeField] private int maxActiveCustomers = 12;
 
+    [Header("Day 1 Crowd Pressure")]
+    [SerializeField] private float day1SpawnIntervalMultiplier = 0.8f;
+    [SerializeField] private float day1CustomerCapMultiplier = 1.2f;
+    [SerializeField] private int day1DirtinessThresholdBonusSpills = 2;
+
     [Header("Day Phase Multipliers")]
     [SerializeField] private float morningMultiplier = 0.25f;
     [SerializeField] private float rushMultiplier = 1f;
@@ -43,6 +48,9 @@ public class CustomerSpawnTuning : MonoBehaviour
 
     public float BaseSpawnIntervalSeconds => baseSpawnIntervalSeconds;
     public int MaxActiveCustomers => maxActiveCustomers;
+    public float Day1SpawnIntervalMultiplier => day1SpawnIntervalMultiplier;
+    public float Day1CustomerCapMultiplier => day1CustomerCapMultiplier;
+    public int Day1DirtinessThresholdBonusSpills => day1DirtinessThresholdBonusSpills;
 
     public float GetDayMultiplier(RestaurantDayCycle.DayPhase phase)
     {

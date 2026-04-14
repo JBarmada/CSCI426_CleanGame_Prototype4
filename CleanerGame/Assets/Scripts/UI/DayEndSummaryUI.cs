@@ -56,7 +56,7 @@ public class DayEndSummaryUI : MonoBehaviour
     [Header("Promotion Decision Coins")]
     [SerializeField] private GameObject promotionCoinsRoot;
     [SerializeField] private TMP_Text promotionCoinsText;
-    [SerializeField] private string promotionCoinsFormat = "Coins: {0}";
+    [SerializeField] private string promotionCoinsFormat = "{0}";
     [SerializeField] private Vector2 promotionCoinsOffset = new Vector2(0f, -70f);
 
     [Header("Promotion Decision Animation")]
@@ -110,6 +110,8 @@ public class DayEndSummaryUI : MonoBehaviour
     private Coroutine resultImageRevealRoutine;
     private float previousTimeScale = 1f;
     private int lastSummaryDay = -1;
+    private int summaryCoinsEarned;
+    private bool hasSummaryCoinsEarned;
     private bool debugApplied;
 
     private bool waitingForPromotionDecision = false;
@@ -210,10 +212,14 @@ public class DayEndSummaryUI : MonoBehaviour
 
         float filthTime = restaurantManager == null ? 0f : restaurantManager.GetFilthTimeSeconds();
         int spillsCleaned = spillTracker == null ? 0 : spillTracker.SpillsCleaned;
+        int coinsEarnedBeforeSummaryBonus = coinWallet == null ? 0 : coinWallet.CoinsEarnedToday;
 
         int salaryBonus = CalculateSalaryBonus(filthTime);
         if (coinWallet != null && salaryBonus > 0)
             coinWallet.AddCoins(salaryBonus);
+
+        summaryCoinsEarned = coinsEarnedBeforeSummaryBonus;
+        hasSummaryCoinsEarned = true;
 
         bool earnedStar = filthTime < 3f;
         if (earnedStar && reputation != null)
@@ -386,7 +392,7 @@ public class DayEndSummaryUI : MonoBehaviour
             filthTimeText.text = "Filth Time: " + filthTime.ToString("0.0") + "s";
 
         if (salaryBonusText != null)
-            salaryBonusText.text = "Salary Bonus: +" + salaryBonus + " coins";
+            salaryBonusText.text = "Salary Bonus: +" + salaryBonus;
 
         if (reputationStar != null)
         {
@@ -538,6 +544,7 @@ public class DayEndSummaryUI : MonoBehaviour
         HideRoot();
         ShowPromotionStars(false);
         ShowPromotionCoins(false);
+        hasSummaryCoinsEarned = false;
         UpdateLegacyReputationStarVisibility();
         Time.timeScale = previousTimeScale;
     }
@@ -751,7 +758,9 @@ public class DayEndSummaryUI : MonoBehaviour
     {
         if (promotionCoinsText == null) return;
 
-        int coins = coinWallet == null ? 0 : coinWallet.Coins;
+        int coins = hasSummaryCoinsEarned
+            ? summaryCoinsEarned
+            : (coinWallet == null ? 0 : coinWallet.CoinsEarnedToday);
         promotionCoinsText.text = string.Format(promotionCoinsFormat, coins);
     }
 

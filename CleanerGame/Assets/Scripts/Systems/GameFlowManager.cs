@@ -28,6 +28,12 @@ public class GameFlowManager : MonoBehaviour
         }
     }
 
+    private void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.R))
+            RestartGame();
+    }
+
     private void LateUpdate()
     {
         if (isPaused && Time.timeScale != 0f)
