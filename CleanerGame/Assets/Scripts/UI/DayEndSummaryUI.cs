@@ -237,7 +237,8 @@ public class DayEndSummaryUI : MonoBehaviour
 
     private void UpdateContinueButtonForDay(int dayNumber, bool isFinalDay)
     {
-        waitingForPromotionDecision = isFinalDay && dayNumber == promotionDay;
+        // Use >= so the promotion flow still runs if maxDays was raised but promotionDay was left lower (scene mismatch).
+        waitingForPromotionDecision = isFinalDay && dayNumber >= promotionDay;
         UpdateLegacyReputationStarVisibility();
         RefreshPromotionStars();
         RefreshPromotionCoins();
@@ -271,6 +272,13 @@ public class DayEndSummaryUI : MonoBehaviour
                 return;
 
             promotionDecisionRoutine = StartCoroutine(ResolvePromotionOrFiredRoutine());
+            return;
+        }
+
+        // Final day / game over without promotion UI: do not resume time (ContinueToNextDay is a no-op when gameOver).
+        if (dayCycle != null && dayCycle.IsGameOver)
+        {
+            Time.timeScale = 0f;
             return;
         }
 
