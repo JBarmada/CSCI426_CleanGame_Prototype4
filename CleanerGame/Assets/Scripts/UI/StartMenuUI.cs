@@ -92,6 +92,7 @@ public class StartMenuUI : MonoBehaviour
     private void OnStartPressed()
     {
         TutorialMode.End();
+        CoinWallet.Instance?.ResetForNewGame();
         HideRoot();
         if (gameFlow != null)
             gameFlow.ResumeGame();
@@ -102,6 +103,7 @@ public class StartMenuUI : MonoBehaviour
     private void OnTutorialPressed()
     {
         TutorialMode.Begin();
+        CoinWallet.Instance?.ResetForNewGame();
         ActivateAllInteractiveTutorials();
 
         HideRoot();

@@ -758,9 +758,7 @@ public class DayEndSummaryUI : MonoBehaviour
     {
         if (promotionCoinsText == null) return;
 
-        int coins = hasSummaryCoinsEarned
-            ? summaryCoinsEarned
-            : (coinWallet == null ? 0 : coinWallet.CoinsEarnedToday);
+        int coins = coinWallet == null ? 0 : coinWallet.Coins;
         promotionCoinsText.text = string.Format(promotionCoinsFormat, coins);
     }
 

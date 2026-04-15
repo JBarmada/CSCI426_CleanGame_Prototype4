@@ -66,6 +66,7 @@ public class GameFlowManager : MonoBehaviour
     public void RestartGame()
     {
         TutorialMode.End();
+        CoinWallet.Instance?.ResetForNewGame();
         Time.timeScale = 1f;
         Scene active = SceneManager.GetActiveScene();
         SceneManager.LoadScene(active.buildIndex);
