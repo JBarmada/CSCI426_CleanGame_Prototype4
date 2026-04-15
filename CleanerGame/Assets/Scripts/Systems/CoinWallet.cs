@@ -5,7 +5,6 @@ public class CoinWallet : MonoBehaviour
 {
     [Header("Coins")]
     [SerializeField] private int startingCoins = 0;
-    [SerializeField] private bool dontDestroyOnLoad = false;
 
     [Header("Day Tracking")]
     [SerializeField] private RestaurantDayCycle dayCycle;
@@ -42,8 +41,7 @@ public class CoinWallet : MonoBehaviour
         if (dayCycle == null)
             dayCycle = FindFirstObjectByType<RestaurantDayCycle>();
 
-        if (dontDestroyOnLoad)
-            DontDestroyOnLoad(gameObject);
+        DontDestroyOnLoad(gameObject);
 
         if (audioSource == null && coinClip != null)
         {
@@ -103,6 +101,13 @@ public class CoinWallet : MonoBehaviour
     public void DebugSetCoins(int amount)
     {
         coins = Mathf.Max(0, amount);
+        CoinsChanged?.Invoke(coins);
+    }
+
+    public void ResetForNewGame()
+    {
+        coins = Mathf.Max(0, startingCoins);
+        coinsEarnedToday = 0;
         CoinsChanged?.Invoke(coins);
     }
 

@@ -92,7 +92,7 @@ public class CoinHud : MonoBehaviour
     private void ResolveWallet()
     {
         if (wallet != null) return;
-        wallet = FindFirstObjectByType<CoinWallet>();
+        wallet = CoinWallet.Instance != null ? CoinWallet.Instance : FindFirstObjectByType<CoinWallet>();
     }
 
     private void ResolveDayCycle()
@@ -104,7 +104,7 @@ public class CoinHud : MonoBehaviour
     private void Refresh()
     {
         if (coinText == null) return;
-        coinText.text = wallet == null ? "0" : wallet.CoinsEarnedToday.ToString();
+        coinText.text = wallet == null ? "0" : wallet.Coins.ToString();
     }
 
     private void PlayCoinPulse()
