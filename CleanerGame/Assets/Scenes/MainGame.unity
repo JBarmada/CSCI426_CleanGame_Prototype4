@@ -2126,9 +2126,9 @@ MonoBehaviour:
   day4RushOccupancy: 1
   day4AfternoonOccupancy: 0.78
   day4ClosingOccupancy: 0.42
-  day4MaxBonkCustomers: 3
+  day4MaxBonkCustomers: 4
   day4FirstBonkChance: 0.42
-  day4SecondBonkChance: 0.48
+  day4SecondBonkChance: 0.72
   day4SpawnIntervalMultiplier: 0.78
   partyDayPartyCustomerChance: 1
   partyDaySpillBaseChance: 0.85
@@ -3296,6 +3296,26 @@ MonoBehaviour:
   decorObjects:
   - {fileID: 1038599347}
   autoAddBalloonBounce: 1
+--- !u!114 &613359830
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 613359818}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1b2c3d4e5f6478998a7b6c5d4e3f210, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SneakerPowerupSystem
+  maxUsesPerDay: 2
+  movementMultiplierPerUse: 1.5
+  stackUses: 1
+  dayCycle: {fileID: 613359823}
+  debugUsesToday: 0
+  debugUsesLeft: 0
+  debugCurrentMultiplier: 0
+  debugTotalUses: 0
 --- !u!1001 &615565453
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -10087,7 +10107,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -93.1, y: -834}
+  m_AnchoredPosition: {x: -93.1, y: -334.6}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 1, y: 1}
 --- !u!114 &1460187586
