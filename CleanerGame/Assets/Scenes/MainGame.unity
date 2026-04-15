@@ -2122,6 +2122,14 @@ MonoBehaviour:
   day3SecondBonkChance: 0.5
   day3TableSource: {fileID: 0}
   day3TableOffset: {x: 0, y: 0, z: -8}
+  day4MorningOccupancy: 0.55
+  day4RushOccupancy: 1
+  day4AfternoonOccupancy: 0.78
+  day4ClosingOccupancy: 0.42
+  day4MaxBonkCustomers: 3
+  day4FirstBonkChance: 0.42
+  day4SecondBonkChance: 0.48
+  day4SpawnIntervalMultiplier: 0.78
   partyDayPartyCustomerChance: 1
   partyDaySpillBaseChance: 0.85
   day1BonkCustomerChance: 0.45
@@ -10566,7 +10574,7 @@ MonoBehaviour:
   waterSpillPrefab: {fileID: 1642107727725399604, guid: c3fee057cc1324a15bd1766585b0c62c, type: 3}
   minX: -8
   maxX: 8
-  minZ: -10
+  minZ: -6
   maxZ: 3
   edgeMargin: 0.5
   floorY: 1
