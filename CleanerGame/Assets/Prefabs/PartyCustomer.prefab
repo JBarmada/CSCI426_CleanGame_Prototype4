@@ -361,6 +361,16 @@ MonoBehaviour:
   shuffleSecondsRange: {x: 6, y: 8}
   disableCustomerComponent: 1
   emotions: {fileID: 0}
+  bonkMoveSpeedMultiplier: 2.4
+  angryCheckRadius: 2.5
+  angryRatePerSpill: 0.15
+  angryDecayRate: 0.015
+  angryRushDistance: 28
+  angryBonkDetectionRadius: 1.5
+  angryTintColor: {r: 1, g: 0.35, b: 0.35, a: 1}
+  wallLayerMask:
+    serializedVersion: 2
+    m_Bits: 128
 --- !u!114 &1102676387024030566
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -391,3 +401,11 @@ MonoBehaviour:
   bonkLeaveSpeedMultiplier: 1.25
   bonkSpawnLift: 0.5
   bonkColorTint: {r: 1, g: 0.35, b: 0.35, a: 1}
+  angryCheckRadius: 2.5
+  angryRatePerSpill: 0.15
+  angryDecayRate: 0.015
+  angryRushDistance: 28
+  angryBonkDetectionRadius: 1.5
+  wallLayerMask:
+    serializedVersion: 2
+    m_Bits: 0

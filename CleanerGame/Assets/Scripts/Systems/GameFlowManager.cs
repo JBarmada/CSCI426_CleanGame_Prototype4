@@ -9,6 +9,14 @@ public class GameFlowManager : MonoBehaviour
 
     [SerializeField] private bool startPaused = true;
 
+    [Header("UI Bootstrap")]
+    [Tooltip("Any UI parent GameObjects that start disabled in the scene. " +
+             "GameFlowManager activates them all on Awake so their scripts can " +
+             "subscribe to events and manage their own visibility from there.\n\n" +
+             "Suggested: Menus parent, GameOverUI parent, PauseMenuUI parent, " +
+             "DayEndSummaryUI parent, GracePeriodHud parent.")]
+    [SerializeField] private GameObject[] uiParentsToActivate;
+
     private bool isPaused;
 
     private void Awake()
@@ -21,17 +29,24 @@ public class GameFlowManager : MonoBehaviour
 
         Instance = this;
 
+        // Activate any UI parents that start disabled so their scripts can run
+        // Awake/OnEnable and subscribe to events. Each script is responsible for
+        // hiding itself immediately in OnEnable if it shouldn't be visible yet.
+        if (uiParentsToActivate != null)
+        {
+            for (int i = 0; i < uiParentsToActivate.Length; i++)
+            {
+                GameObject ui = uiParentsToActivate[i];
+                if (ui != null && !ui.activeSelf)
+                    ui.SetActive(true);
+            }
+        }
+
         if (startPaused)
         {
             isPaused = true;
             Time.timeScale = 0f;
         }
-    }
-
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.R))
-            RestartGame();
     }
 
     private void LateUpdate()

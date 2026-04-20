@@ -93,10 +93,15 @@ public class ThirdPersonController : MonoBehaviour
     public Vector3 broomTipLocalOffset = new Vector3(0f, 0f, 0.6f);
     public float broomSweepBurstInterval = 1f;
     public float broomSweepBurstLifetime = 1.2f;
+    [Tooltip("Optional persistent Point Light (child of the broom). " +
+             "Enabled automatically while the player is actively cleaning a spill.")]
+    public Light broomCleaningLight;
 
     bool isSweeping = false;
     bool wasSweeping = false;
     float broomSweepBurstTimer = 0f;
+    bool  isActivelyCleaningSpill = false;
+    float cleaningSpillCheckTimer  = 0f;
     Vector3 broomDefaultLocalPos;
     Quaternion broomDefaultLocalRot;
     Vector3 desiredPlanarMoveDirection = Vector3.zero;
@@ -237,16 +242,39 @@ public class ThirdPersonController : MonoBehaviour
 
         if (!isSweeping)
         {
+            // Not sweeping at all — kill everything
+            broomSweepBurstTimer   = 0f;
+            isActivelyCleaningSpill = false;
+            if (broomCleaningLight != null) broomCleaningLight.enabled = false;
+            return;
+        }
+
+        // Throttled check: is the broom currently over an active spill? (every 0.1 s)
+        cleaningSpillCheckTimer -= Time.deltaTime;
+        if (cleaningSpillCheckTimer <= 0f)
+        {
+            cleaningSpillCheckTimer   = 0.1f;
+            isActivelyCleaningSpill   = IsActivelyCleaningAnySpill();
+        }
+
+        // Persistent cleaning light — on only while actually cleaning
+        if (broomCleaningLight != null)
+            broomCleaningLight.enabled = isActivelyCleaningSpill;
+
+        // No spill under broom → no VFX
+        if (!isActivelyCleaningSpill)
+        {
             broomSweepBurstTimer = 0f;
             return;
         }
 
+        // Burst VFX on the configured interval
         broomSweepBurstTimer += Time.deltaTime;
         if (broomSweepBurstTimer < broomSweepBurstInterval)
             return;
 
         broomSweepBurstTimer = 0f;
-        Vector3 spawnPos = broom.TransformPoint(broomTipLocalOffset);
+        Vector3    spawnPos = broom.TransformPoint(broomTipLocalOffset);
         Quaternion spawnRot = broom.rotation;
 
         if (broomSweepParticlePrefab != null)
@@ -262,6 +290,18 @@ public class ThirdPersonController : MonoBehaviour
             if (broomSweepBurstLifetime > 0f)
                 Destroy(lightFx, broomSweepBurstLifetime);
         }
+    }
+
+    /// <summary>Returns true if any live SpillManager is currently being swept.</summary>
+    private bool IsActivelyCleaningAnySpill()
+    {
+        var spills = SpillManager.ActiveSpills;
+        for (int i = 0; i < spills.Count; i++)
+        {
+            SpillManager s = spills[i];
+            if (s != null && s.IsBeingCleaned) return true;
+        }
+        return false;
     }
 
     private void LateUpdate()

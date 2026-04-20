@@ -33,6 +33,14 @@ public class EnvironmentDirtManager : MonoBehaviour
     [Tooltip("Plane/quad GameObjects with dirty-looking sprites, disabled by default")]
     [SerializeField] private GameObject[] grimeOverlayObjects;
 
+    [Header("Clutter Obstacles (Dirty+) — must have solid colliders")]
+    [Tooltip("GameObjects with Box/CapsuleColliders that physically block the player. Activated at Dirty and above.")]
+    [SerializeField] private GameObject[] dirtyClutterObjects;
+
+    [Header("Clutter Obstacles (VeryDirty+) — must have solid colliders")]
+    [Tooltip("Denser obstacle set added on top of Dirty clutter. Activated at VeryDirty and above.")]
+    [SerializeField] private GameObject[] veryDirtyClutterObjects;
+
     [Header("Debris (Filthy only)")]
     [Tooltip("Small litter/debris GameObjects on the floor, disabled by default")]
     [SerializeField] private GameObject[] debrisObjects;
@@ -85,6 +93,8 @@ public class EnvironmentDirtManager : MonoBehaviour
             flyAudioSource.loop   = true;
         }
 
+        SetObjects(dirtyClutterObjects,     false);
+        SetObjects(veryDirtyClutterObjects, false);
         SetGrimeOverlays(false);
         SetDebris(false);
         SetFlyParticles(false);
@@ -121,9 +131,15 @@ public class EnvironmentDirtManager : MonoBehaviour
 
         currentLevel = newLevel;
 
+        bool dirtyOrWorse     = currentLevel >= RestaurantManager.DirtinessLevel.Dirty;
         bool veryDirtyOrWorse = currentLevel >= RestaurantManager.DirtinessLevel.VeryDirty;
         bool filthy            = currentLevel == RestaurantManager.DirtinessLevel.Filthy;
 
+        // Physical clutter that blocks player movement
+        SetObjects(dirtyClutterObjects,     dirtyOrWorse);
+        SetObjects(veryDirtyClutterObjects, veryDirtyOrWorse);
+
+        // Visual-only overlays and effects
         SetGrimeOverlays(veryDirtyOrWorse);
         SetDebris(filthy);
         SetFlyParticles(filthy);
@@ -192,6 +208,14 @@ public class EnvironmentDirtManager : MonoBehaviour
     {
         if (debrisObjects == null) return;
         foreach (var obj in debrisObjects)
+            if (obj != null) obj.SetActive(active);
+    }
+
+    /// <summary>Generic helper for toggling any group of GameObjects.</summary>
+    private void SetObjects(GameObject[] objects, bool active)
+    {
+        if (objects == null) return;
+        foreach (var obj in objects)
             if (obj != null) obj.SetActive(active);
     }
 

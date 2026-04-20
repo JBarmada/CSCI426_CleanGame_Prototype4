@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class Customer : MonoBehaviour
 {
@@ -7,335 +8,447 @@ public class Customer : MonoBehaviour
     [SerializeField] private float arrivalDistance = 0.2f;
     [SerializeField] private CrowdContactSettings crowdContact = new CrowdContactSettings();
     [SerializeField] private PartyCustomerEmotions emotions;
-    [SerializeField] private RegularCustomerEmotions customeremotions;
-    [Header("Bonk Customer")]
-    [SerializeField] private bool startAsBonkCustomer;
-    [SerializeField] private float bonkMoveSpeedMultiplier = 2.4f;
-    [SerializeField] private float bonkLifetimeSeconds = 18f;
-    [SerializeField] private float bonkLeaveSpeedMultiplier = 1.25f;
-    [SerializeField] private float bonkSpawnLift = 0.5f;
-    [SerializeField] private Color bonkColorTint = new Color(1f, 0.35f, 0.35f, 1f);
-    
-    private CustomerManager manager;
-    private Chair assignedChair;
-    private Transform exitPoint;
-    private float sitTimer;
-    private SphereCollider crowdCollider;
-    private bool isBonkCustomer;
-    private float bonkTimer;
-    private Vector3 bonkTarget;
-    private Renderer[] cachedRenderers;
-    private Vector3 bonkSpawnPosition;
-    private bool bonkRetargeted;
-    private bool bonkLeaving;
+    [FormerlySerializedAs("customeremotions")]
+    [SerializeField] private RegularCustomerEmotions regularCustomerEmotions;
 
-    private enum CustomerState
-    {
-        WalkingToSeat,
-        Sitting,
-        Leaving,
-        Bonking,
-        BonkReposition
-    }
+    [Header("Angry Rush")]
+    [Tooltip("Speed multiplier applied during the straight-line rush toward the player.")]
+    [FormerlySerializedAs("bonkMoveSpeedMultiplier")]
+    [SerializeField] private float angryRushMoveSpeedMultiplier = 2.4f;
+    [Tooltip("Speed multiplier when walking to the exit after a rush.")]
+    [FormerlySerializedAs("bonkLeaveSpeedMultiplier")]
+    [SerializeField] private float angryExitSpeedMultiplier = 1.25f;
+    [Tooltip("Tint color snapped to when the customer goes fully angry.")]
+    [FormerlySerializedAs("bonkColorTint")]
+    [SerializeField] private Color angryColorTint = new Color(1f, 0.35f, 0.35f, 1f);
+
+    [Header("Rage Conversion")]
+    [Tooltip("Chance (0 = never, 1 = always) that this customer can turn angry when seated near spills.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float canTurnAngryChance = 0.4f;
+    [Tooltip("Radius in world units to scan for nearby spills while sitting.")]
+    [SerializeField] private float angryCheckRadius = 2.5f;
+    [Tooltip("Anger progress gained per second for each spill within range.")]
+    [SerializeField] private float angryRatePerSpill = 0.15f;
+    [Tooltip("Anger progress lost per second when no spills are nearby.")]
+    [SerializeField] private float angryDecayRate = 0.015f;
+    [Tooltip("How far ahead of the customer the straight-line rush target is placed.")]
+    [SerializeField] private float angryRushDistance = 28f;
+    [Tooltip("Distance within which the customer counts as having bonked the player and starts leaving.")]
+    [SerializeField] private float angryBonkDetectionRadius = 1.5f;
+
+    [Header("Wall Collision")]
+    [Tooltip("Layer(s) your wall colliders live on. Customers will slide along these instead of stopping dead.")]
+    [SerializeField] private LayerMask wallLayerMask;
+
+    // ── Private state ─────────────────────────────────────────────────────────
+
+    private CustomerManager manager;
+    private Chair           assignedChair;
+    private Transform       exitPoint;
+    private float           sitTimer;
+    private SphereCollider  crowdCollider;
+    private bool            isAngryCustomer;   // true once the angry rush starts
+    private bool            angryLeaving;      // true after rush — uses leave-speed to exit
+
+    private Renderer[] cachedRenderers;
+    private Color[]    originalTints;         // per-renderer starting colors; lerp baseline
+
+    // Rage conversion
+    private bool    canTurnAngry;
+    private float   angryProgress;            // 0 → 1
+    private float   angerCheckTimer;
+    private int     cachedNearbySpills;
+    private Vector3 angryRushTarget;
+
+    private enum CustomerState { WalkingToSeat, Sitting, Leaving, AngryRush }
+    private CustomerState state;
+
+    // ── Public properties ─────────────────────────────────────────────────────
+
+    public bool IsAngryCustomer      => isAngryCustomer;
+    public bool CountsTowardCapacity => !isAngryCustomer;
+
+    // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     private void Awake()
     {
         if (emotions == null)
             emotions = GetComponentInChildren<PartyCustomerEmotions>();
-        if (customeremotions == null)
-            customeremotions = GetComponentInChildren<RegularCustomerEmotions>();
-        crowdCollider = GetComponent<SphereCollider>();
+        if (regularCustomerEmotions == null)
+            regularCustomerEmotions = GetComponentInChildren<RegularCustomerEmotions>();
+
+        crowdCollider   = GetComponent<SphereCollider>();
         cachedRenderers = GetComponentsInChildren<Renderer>(true);
 
-        if (startAsBonkCustomer)
-            SetBonkCustomerVisuals(true);
+        // Cache each renderer's original material color so tint lerps start
+        // from the real material color, not a hard-coded white.
+        originalTints = new Color[cachedRenderers.Length];
+        for (int i = 0; i < cachedRenderers.Length; i++)
+        {
+            Renderer r = cachedRenderers[i];
+            if (r == null || r.sharedMaterial == null) { originalTints[i] = Color.white; continue; }
+            if      (r.sharedMaterial.HasProperty("_BaseColor")) originalTints[i] = r.sharedMaterial.GetColor("_BaseColor");
+            else if (r.sharedMaterial.HasProperty("_Color"))     originalTints[i] = r.sharedMaterial.GetColor("_Color");
+            else                                                  originalTints[i] = Color.white;
+        }
+
+        // Roll whether this customer instance can go angry (uses the per-prefab chance slider)
+        canTurnAngry = Random.value <= canTurnAngryChance;
     }
-    
-    private CustomerState state;
-    public bool IsBonkCustomer => isBonkCustomer || startAsBonkCustomer;
-    public bool CountsTowardCapacity => !IsBonkCustomer;
+
+    private void Start()
+    {
+        if (regularCustomerEmotions != null)
+            regularCustomerEmotions.SetWhistling();
+    }
+
+    // ── Public API ────────────────────────────────────────────────────────────
 
     public void Initialize(CustomerManager owner)
     {
         manager = owner;
-
-        if (startAsBonkCustomer)
-            ConfigureAsBonkCustomer();
-    }
-    
-    private void Start()
-    {
-        if (customeremotions != null)
-            customeremotions.SetWhistling();
     }
 
     public void AssignChair(Chair chair, Transform exit)
     {
-        if (isBonkCustomer)
-            return;
+        if (isAngryCustomer) return;
 
         assignedChair = chair;
-        exitPoint = exit;
-        state = CustomerState.WalkingToSeat;
+        exitPoint     = exit;
+        state         = CustomerState.WalkingToSeat;
     }
 
-    public void ConfigureAsBonkCustomer()
-    {
-        if (isBonkCustomer)
-            return;
-
-        isBonkCustomer = true;
-        bonkTimer = bonkLifetimeSeconds;
-        state = CustomerState.Bonking;
-        ReleaseReservationIfNeeded();
-        if (manager != null)
-            exitPoint = manager.ExitPoint;
-        transform.position += Vector3.up * bonkSpawnLift;
-        bonkSpawnPosition = transform.position;
-        bonkRetargeted = false;
-        bonkLeaving = false;
-        SetBonkCustomerVisuals(true);
-        PickBonkTargetFromPlayer();
-    }
+    // ── Update / state machine ────────────────────────────────────────────────
 
     private void Update()
     {
-        if (state == CustomerState.Bonking)
+        switch (state)
         {
-            UpdateBonkCustomer();
+            case CustomerState.WalkingToSeat: UpdateWalkingToSeat(); break;
+            case CustomerState.Sitting:       UpdateSitting();       break;
+            case CustomerState.Leaving:       UpdateLeaving();       break;
+            case CustomerState.AngryRush:     UpdateAngryRush();     break;
         }
-        else if (state == CustomerState.BonkReposition)
+    }
+
+    // ── State: WalkingToSeat ──────────────────────────────────────────────────
+
+    private void UpdateWalkingToSeat()
+    {
+        if (assignedChair == null)
         {
-            UpdateBonkReposition();
+            if (manager != null) manager.TryAssignChair(this);
+            return;
         }
-        else if (state == CustomerState.WalkingToSeat)
+
+        MoveTowards(assignedChair.GetSeatPosition());
+
+        if (Vector3.Distance(transform.position, assignedChair.GetSeatPosition()) <= arrivalDistance)
         {
-            if (assignedChair == null)
+            if (assignedChair.TrySit(this))
             {
-                if (manager != null)
-                    manager.TryAssignChair(this);
-                return;
+                sitTimer = sitDurationSeconds;
+                state    = CustomerState.Sitting;
+                if (emotions != null) emotions.BeginSitting();
             }
-
-            MoveTowards(assignedChair.GetSeatPosition());
-
-            if (Vector3.Distance(transform.position, assignedChair.GetSeatPosition()) <= arrivalDistance)
+            else
             {
-                if (assignedChair.TrySit(this))
-                {
-                    sitTimer = sitDurationSeconds;
-                    state = CustomerState.Sitting;
-                    if (emotions != null)
-                        emotions.BeginSitting();
-                }
-                else
-                {
-                    assignedChair.ReleaseReservation(this);
-                    assignedChair = null;
-
-                    if (manager != null)
-                        manager.TryAssignChair(this);
-                }
-            }
-        }
-        else if (state == CustomerState.Sitting)
-        {
-            sitTimer -= Time.deltaTime;
-            if (emotions != null)
-                emotions.UpdateSittingTimer(sitTimer);
-            if (sitTimer <= 0f)
-            {
-                // ✅ Customer stands up: spawn spill on floor near chair, then free chair
-                if (assignedChair != null)
-                {
-                    //spawning logic
-                    bool didSpill = false;
-
-                    if (manager != null)
-                        didSpill = manager.OnCustomerLeftChair(assignedChair.transform.position);
-
-                    if (didSpill && emotions != null)
-                        emotions.BeginLeaving(); // crying ONLY if spill
-                    if (didSpill && customeremotions != null)
-                        customeremotions.ShowSpillForThreeSeconds();
-
-
-                    assignedChair.CustomerLeft(); // frees occupancy
-                    assignedChair = null;
-                }
-
-                state = CustomerState.Leaving;
-            }
-        }
-        else if (state == CustomerState.Leaving)
-        {
-            if (exitPoint == null)
-            {
-                ReleaseReservationIfNeeded();
-                if (manager != null) manager.DespawnCustomer(this);
-                return;
-            }
-
-            MoveTowards(exitPoint.position);
-
-            Vector3 currentPlanar = new Vector3(transform.position.x, 0f, transform.position.z);
-            Vector3 exitPlanar = new Vector3(exitPoint.position.x, 0f, exitPoint.position.z);
-            if (Vector3.Distance(currentPlanar, exitPlanar) <= arrivalDistance)
-            {
-                ReleaseReservationIfNeeded();
-                if (manager != null) manager.DespawnCustomer(this);
+                assignedChair.ReleaseReservation(this);
+                assignedChair = null;
+                if (manager != null) manager.TryAssignChair(this);
             }
         }
     }
+
+    // ── State: Sitting ────────────────────────────────────────────────────────
+
+    private void UpdateSitting()
+    {
+        // ── Rage conversion ──────────────────────────────────────────────────
+        angerCheckTimer += Time.deltaTime;
+        if (angerCheckTimer >= 0.25f)
+        {
+            angerCheckTimer    = 0f;
+            cachedNearbySpills = CountNearbySpills();
+        }
+
+        if (canTurnAngry)
+        {
+            if (cachedNearbySpills > 0)
+                angryProgress = Mathf.Min(1f, angryProgress + cachedNearbySpills * angryRatePerSpill * Time.deltaTime);
+            else
+                angryProgress = Mathf.Max(0f, angryProgress - angryDecayRate * Time.deltaTime);
+
+            SetTintGradient(angryProgress);
+
+            if (angryProgress >= 1f)
+            {
+                if (manager != null && !manager.TryRegisterAngryCustomerRush())
+                {
+                    angryProgress = Mathf.Min(angryProgress, 0.85f);
+                    SetTintGradient(angryProgress);
+                    return;
+                }
+
+                TriggerAngryRush();
+                return;
+            }
+        }
+
+        // ── Normal sit-timer countdown ───────────────────────────────────────
+        sitTimer -= Time.deltaTime;
+        if (emotions != null) emotions.UpdateSittingTimer(sitTimer);
+
+        if (sitTimer <= 0f)
+        {
+            if (assignedChair != null)
+            {
+                bool didSpill = manager != null && manager.OnCustomerLeftChair(assignedChair.transform.position);
+
+                if (didSpill && emotions != null)        emotions.BeginLeaving();
+                if (didSpill && regularCustomerEmotions != null) regularCustomerEmotions.ShowSpillForThreeSeconds();
+
+                assignedChair.CustomerLeft();
+                assignedChair = null;
+            }
+
+            state = CustomerState.Leaving;
+        }
+    }
+
+    // ── State: AngryRush ──────────────────────────────────────────────────────
+
+    private void UpdateAngryRush()
+    {
+        MoveTowards(angryRushTarget);
+
+        if (ThirdPersonController.Instance != null)
+        {
+            float playerDist = Vector3.Distance(
+                new Vector3(transform.position.x, 0f, transform.position.z),
+                new Vector3(ThirdPersonController.Instance.transform.position.x, 0f,
+                            ThirdPersonController.Instance.transform.position.z));
+
+            if (playerDist <= angryBonkDetectionRadius)
+            {
+                // Deliver the bonk directly — the crowd utility's contact radius (~0.8 f)
+                // is smaller than angryBonkDetectionRadius, so we apply the impulse here.
+                Vector3 bonkDir = new Vector3(
+                    ThirdPersonController.Instance.transform.position.x - transform.position.x, 0f,
+                    ThirdPersonController.Instance.transform.position.z - transform.position.z);
+                if (bonkDir.sqrMagnitude > 0.001f) bonkDir.Normalize();
+                ThirdPersonController.Instance.ApplyBonk(bonkDir, moveSpeed * angryRushMoveSpeedMultiplier);
+
+                angryLeaving = true;
+                state        = CustomerState.Leaving;
+                return;
+            }
+        }
+
+        // Fallback: rush line exhausted without hitting player — leave anyway
+        float dist = Vector3.Distance(
+            new Vector3(transform.position.x, 0f, transform.position.z),
+            new Vector3(angryRushTarget.x,    0f, angryRushTarget.z));
+
+        if (dist <= arrivalDistance + 0.5f)
+        {
+            angryLeaving = true;
+            state        = CustomerState.Leaving;
+        }
+    }
+
+    // ── State: Leaving ────────────────────────────────────────────────────────
+
+    private void UpdateLeaving()
+    {
+        if (exitPoint == null)
+        {
+            ReleaseReservationIfNeeded();
+            if (manager != null) manager.DespawnCustomer(this);
+            return;
+        }
+
+        MoveTowards(exitPoint.position);
+
+        Vector3 currentPlanar = new Vector3(transform.position.x, 0f, transform.position.z);
+        Vector3 exitPlanar    = new Vector3(exitPoint.position.x,  0f, exitPoint.position.z);
+        if (Vector3.Distance(currentPlanar, exitPlanar) <= arrivalDistance)
+        {
+            ReleaseReservationIfNeeded();
+            if (manager != null) manager.DespawnCustomer(this);
+        }
+    }
+
+    // ── Rage helpers ──────────────────────────────────────────────────────────
+
+    private int CountNearbySpills()
+    {
+        // Uses the static registry on SpillManager — no FindObjectsByType allocation
+        var spills = SpillManager.ActiveSpills;
+        int count  = 0;
+        for (int i = 0; i < spills.Count; i++)
+        {
+            if (spills[i] == null) continue;
+            if (Vector3.Distance(transform.position, spills[i].transform.position) <= angryCheckRadius)
+                count++;
+        }
+        return count;
+    }
+
+    private void TriggerAngryRush()
+    {
+        // Release chair without spawning a spill
+        if (assignedChair != null)
+        {
+            assignedChair.CustomerLeft();
+            assignedChair = null;
+        }
+
+        isAngryCustomer = true;
+        if (exitPoint == null && manager != null)
+            exitPoint = manager.ExitPoint;
+
+        Vector3 playerPos = ThirdPersonController.Instance != null
+            ? ThirdPersonController.Instance.transform.position
+            : transform.position + transform.forward;
+
+        Vector3 dir = playerPos - transform.position;
+        dir.y = 0f;
+        if (dir.sqrMagnitude < 0.01f) dir = transform.forward;
+        dir.Normalize();
+
+        angryRushTarget   = transform.position + dir * angryRushDistance;
+        angryRushTarget.y = transform.position.y;
+
+        state = CustomerState.AngryRush;
+        SetAngryVisuals(true);   // snap to full red
+    }
+
+    // ── Visuals ───────────────────────────────────────────────────────────────
+
+    /// <summary>Lerps the customer's tint from its original color toward the angry tint.</summary>
+    private void SetTintGradient(float t)
+    {
+        if (cachedRenderers == null) return;
+        var block = new MaterialPropertyBlock();
+        for (int i = 0; i < cachedRenderers.Length; i++)
+        {
+            Renderer r = cachedRenderers[i];
+            if (r == null) continue;
+            Color origin = (originalTints != null && i < originalTints.Length) ? originalTints[i] : Color.white;
+            Color tint   = Color.Lerp(origin, angryColorTint, t);
+            r.GetPropertyBlock(block);
+            if (r.sharedMaterial != null && r.sharedMaterial.HasProperty("_BaseColor"))
+                block.SetColor("_BaseColor", tint);
+            else
+                block.SetColor("_Color", tint);
+            r.SetPropertyBlock(block);
+        }
+    }
+
+    /// <summary>Snaps the customer to full angry red (true) or restores original colors (false).</summary>
+    private void SetAngryVisuals(bool angry)
+    {
+        if (cachedRenderers == null) return;
+        var block = new MaterialPropertyBlock();
+        for (int i = 0; i < cachedRenderers.Length; i++)
+        {
+            Renderer r = cachedRenderers[i];
+            if (r == null) continue;
+            Color tint = angry
+                ? angryColorTint
+                : ((originalTints != null && i < originalTints.Length) ? originalTints[i] : Color.white);
+            r.GetPropertyBlock(block);
+            if (r.sharedMaterial != null && r.sharedMaterial.HasProperty("_BaseColor"))
+                block.SetColor("_BaseColor", tint);
+            else
+                block.SetColor("_Color", tint);
+            r.SetPropertyBlock(block);
+        }
+    }
+
+    // ── Utilities ─────────────────────────────────────────────────────────────
 
     private void ReleaseReservationIfNeeded()
     {
         if (assignedChair == null) return;
-
         assignedChair.ReleaseReservation(this);
         assignedChair = null;
     }
 
     private void MoveTowards(Vector3 target)
     {
-        float speed = isBonkCustomer ? moveSpeed * bonkMoveSpeedMultiplier : moveSpeed;
-        if (bonkLeaving && state == CustomerState.Leaving && isBonkCustomer)
-            speed = moveSpeed * bonkLeaveSpeedMultiplier;
+        float speed = isAngryCustomer ? moveSpeed * angryRushMoveSpeedMultiplier : moveSpeed;
+        if (angryLeaving && state == CustomerState.Leaving && isAngryCustomer)
+            speed = moveSpeed * angryExitSpeedMultiplier;
 
         Vector3 adjustedTarget = target;
-        if (isBonkCustomer)
+        if (isAngryCustomer)
             adjustedTarget.y = transform.position.y;
 
-        CustomerCrowdUtility.MoveTowardsWithCrowdContact(transform, crowdCollider, adjustedTarget, speed, crowdContact, isBonkCustomer);
+        Vector3 prevPos = transform.position;
+        CustomerCrowdUtility.MoveTowardsWithCrowdContact(
+            transform, crowdCollider, adjustedTarget, speed, crowdContact, isAngryCustomer);
+        ApplyWallCorrection(prevPos);
     }
 
-    private void UpdateBonkCustomer()
+    private void ApplyWallCorrection(Vector3 prevPos)
     {
-        bonkTimer -= Time.deltaTime;
-        if (manager == null)
-        {
-            manager?.DespawnCustomer(this);
+        if (wallLayerMask.value == 0) return;
+
+        Vector3 newPos   = transform.position;
+        Vector3 movement = newPos - prevPos;
+        float   moveDist = movement.magnitude;
+        if (moveDist < 0.001f) return;
+
+        float   radius = crowdCollider != null ? crowdCollider.radius * 0.85f : 0.4f;
+        Vector3 bottom = prevPos + Vector3.up * 0.1f;
+        Vector3 top    = prevPos + Vector3.up * 1.5f;
+
+        if (!Physics.CapsuleCast(bottom, top, radius, movement.normalized,
+                out RaycastHit hit, moveDist, wallLayerMask, QueryTriggerInteraction.Ignore))
             return;
-        }
 
-        if (bonkTimer <= 0f)
+        float   safeDistance = Mathf.Max(0f, hit.distance - 0.05f);
+        Vector3 safePos      = prevPos + movement.normalized * safeDistance;
+
+        // Slide remaining movement along the wall surface (XZ plane only)
+        float remaining = moveDist - safeDistance;
+        if (remaining > 0.001f)
         {
-            bonkLeaving = true;
-            state = CustomerState.Leaving;
-            return;
-        }
-
-        if (!bonkRetargeted)
-        {
-            Vector3 startPlanar = new Vector3(bonkSpawnPosition.x, 0f, bonkSpawnPosition.z);
-            Vector3 targetPlanar = new Vector3(bonkTarget.x, 0f, bonkTarget.z);
-            Vector3 currentPlanar = new Vector3(transform.position.x, 0f, transform.position.z);
-
-            float totalDistance = Vector3.Distance(startPlanar, targetPlanar);
-            float travelledDistance = Vector3.Distance(startPlanar, currentPlanar);
-            if (totalDistance > 0.01f && travelledDistance >= totalDistance * 0.5f)
+            Vector3 wallNormal = new Vector3(hit.normal.x, 0f, hit.normal.z).normalized;
+            Vector3 slideDir   = Vector3.ProjectOnPlane(movement.normalized, wallNormal);
+            if (slideDir.sqrMagnitude > 0.001f)
             {
-                bonkRetargeted = true;
-                PickBonkTargetFromPlayer();
+                slideDir.Normalize();
+                Vector3 sb = safePos + Vector3.up * 0.1f;
+                Vector3 st = safePos + Vector3.up * 1.5f;
+                if (!Physics.CapsuleCast(sb, st, radius, slideDir,
+                        remaining, wallLayerMask, QueryTriggerInteraction.Ignore))
+                {
+                    transform.position = safePos + slideDir * remaining;
+                    return;
+                }
             }
         }
 
-        MoveTowards(bonkTarget);
-        if (Vector3.Distance(transform.position, bonkTarget) <= arrivalDistance)
-        {
-            if (bonkTimer <= 0f)
-            {
-                bonkLeaving = true;
-                state = CustomerState.Leaving;
-            }
-            else
-            {
-                state = CustomerState.BonkReposition;
-                PickBonkRepositionTarget();
-            }
-        }
-    }
-
-    private void UpdateBonkReposition()
-    {
-        bonkTimer -= Time.deltaTime;
-        if (manager == null)
-        {
-            manager?.DespawnCustomer(this);
-            return;
-        }
-
-        if (bonkTimer <= 0f)
-        {
-            bonkLeaving = true;
-            state = CustomerState.Leaving;
-            return;
-        }
-
-        MoveTowards(bonkTarget);
-        if (Vector3.Distance(transform.position, bonkTarget) <= arrivalDistance)
-        {
-            bonkSpawnPosition = transform.position;
-            bonkRetargeted = false;
-            state = CustomerState.Bonking;
-            PickBonkTargetFromPlayer();
-        }
-    }
-
-    private void PickBonkTargetFromPlayer()
-    {
-        if (ThirdPersonController.Instance == null)
-        {
-            bonkTarget = transform.position;
-            return;
-        }
-
-        bonkTarget = ThirdPersonController.Instance.transform.position;
-        bonkTarget.y = transform.position.y;
-    }
-
-    private void PickBonkRepositionTarget()
-    {
-        Vector2 dir2D = Random.insideUnitCircle.normalized;
-        if (dir2D.sqrMagnitude <= 0.0001f)
-            dir2D = Vector2.right;
-
-        float distance = Random.Range(1.8f, 3.5f);
-        bonkTarget = transform.position + new Vector3(dir2D.x, 0f, dir2D.y) * distance;
-        bonkTarget.y = transform.position.y;
-    }
-
-    private void SetBonkCustomerVisuals(bool bonkEnabled)
-    {
-        if (cachedRenderers == null) return;
-
-        Color tint = bonkEnabled ? bonkColorTint : Color.white;
-        MaterialPropertyBlock block = new MaterialPropertyBlock();
-
-        for (int i = 0; i < cachedRenderers.Length; i++)
-        {
-            Renderer renderer = cachedRenderers[i];
-            if (renderer == null) continue;
-
-            renderer.GetPropertyBlock(block);
-            if (renderer.sharedMaterial != null && renderer.sharedMaterial.HasProperty("_BaseColor"))
-                block.SetColor("_BaseColor", tint);
-            else
-                block.SetColor("_Color", tint);
-            renderer.SetPropertyBlock(block);
-        }
+        // Cornered — park at the wall
+        transform.position = safePos;
     }
 }
+
+// ── Shared types (used by Customer and CustomerPartyAI) ───────────────────────
 
 [System.Serializable]
 public class CrowdContactSettings
 {
-    [Min(0f)] public float contactPadding = 0.1f;
-    [Min(0.1f)] public float customerHeaviness = 1.5f;
-    [Min(0f)] public float playerPushStrength = 1.2f;
-    [Min(0f)] public float playerPushWhilePushing = 0.35f;
-    [Min(0f)] public float customerPushStrength = 0.75f;
-    [Range(0f, 1f)] public float playerPushIntentThreshold = 0.25f;
+    [Min(0f)]          public float contactPadding          = 0.1f;
+    [Min(0.1f)]        public float customerHeaviness       = 1.5f;
+    [Min(0f)]          public float playerPushStrength      = 1.2f;
+    [Min(0f)]          public float playerPushWhilePushing  = 0.35f;
+    [Min(0f)]          public float customerPushStrength    = 0.75f;
+    [Range(0f, 1f)]    public float playerPushIntentThreshold = 0.25f;
 }
 
 public static class CustomerCrowdUtility
@@ -346,14 +459,12 @@ public static class CustomerCrowdUtility
         Vector3 target,
         float moveSpeed,
         CrowdContactSettings settings,
-        bool isBonkCustomer = false)
+        bool isAngryCustomer = false)
     {
-        if (customerTransform == null)
-            return;
+        if (customerTransform == null) return;
 
         float deltaTime = Time.deltaTime;
-        if (deltaTime <= 0f)
-            return;
+        if (deltaTime <= 0f) return;
 
         Vector3 currentPosition = customerTransform.position;
         Vector3 desiredPosition = Vector3.MoveTowards(currentPosition, target, moveSpeed * deltaTime);
@@ -371,10 +482,10 @@ public static class CustomerCrowdUtility
             return;
         }
 
-        Vector3 planarCustomer = new Vector3(desiredPosition.x, 0f, desiredPosition.z);
-        Vector3 planarPlayer = player.PlanarPosition;
+        Vector3 planarCustomer   = new Vector3(desiredPosition.x, 0f, desiredPosition.z);
+        Vector3 planarPlayer     = player.PlanarPosition;
         Vector3 playerToCustomer = planarCustomer - planarPlayer;
-        float distance = playerToCustomer.magnitude;
+        float   distance         = playerToCustomer.magnitude;
 
         float customerRadius = GetCustomerRadius(customerTransform, customerCollider);
         float combinedRadius = customerRadius + player.CharacterRadius + Mathf.Max(0f, settings.contactPadding);
@@ -389,10 +500,11 @@ public static class CustomerCrowdUtility
             ? playerToCustomer / distance
             : GetFallbackDirection(player);
 
-        float overlap = combinedRadius - distance;
-        float heaviness = Mathf.Max(0.1f, settings.customerHeaviness);
-        bool playerPushingIntoCustomer = player.HasMovementInput &&
-            Vector3.Dot(player.DesiredPlanarMoveDirection, pushDirectionToCustomer) >= settings.playerPushIntentThreshold;
+        float overlap    = combinedRadius - distance;
+        float heaviness  = Mathf.Max(0.1f, settings.customerHeaviness);
+        bool  playerPushingIntoCustomer = player.HasMovementInput &&
+            Vector3.Dot(player.DesiredPlanarMoveDirection, pushDirectionToCustomer)
+                >= settings.playerPushIntentThreshold;
 
         Vector3 adjustedPosition = desiredPosition;
 
@@ -404,7 +516,7 @@ public static class CustomerCrowdUtility
             float playerRecoil = overlap * settings.playerPushWhilePushing * heaviness;
             if (playerRecoil > 0f)
             {
-                if (isBonkCustomer)
+                if (isAngryCustomer)
                     player.ApplyBonk(-pushDirectionToCustomer, playerRecoil);
                 else
                     player.ApplyExternalDisplacement(-pushDirectionToCustomer * playerRecoil);
@@ -415,7 +527,7 @@ public static class CustomerCrowdUtility
             float playerPushback = overlap * settings.playerPushStrength * heaviness;
             if (playerPushback > 0f)
             {
-                if (isBonkCustomer)
+                if (isAngryCustomer)
                     player.ApplyBonk(-pushDirectionToCustomer, playerPushback);
                 else
                     player.ApplyExternalDisplacement(-pushDirectionToCustomer * playerPushback);
@@ -425,21 +537,17 @@ public static class CustomerCrowdUtility
         customerTransform.position = adjustedPosition;
     }
 
-    private static float GetCustomerRadius(Transform customerTransform, SphereCollider customerCollider)
+    private static float GetCustomerRadius(Transform t, SphereCollider col)
     {
-        if (customerCollider == null)
-            return 0.5f;
-
-        Vector3 lossyScale = customerTransform.lossyScale;
-        float scale = Mathf.Max(Mathf.Abs(lossyScale.x), Mathf.Abs(lossyScale.z));
-        return Mathf.Max(0.05f, customerCollider.radius * scale);
+        if (col == null) return 0.5f;
+        Vector3 s = t.lossyScale;
+        return Mathf.Max(0.05f, col.radius * Mathf.Max(Mathf.Abs(s.x), Mathf.Abs(s.z)));
     }
 
     private static Vector3 GetFallbackDirection(ThirdPersonController player)
     {
-        if (player != null && player.HasMovementInput)
-            return player.DesiredPlanarMoveDirection;
-
-        return Vector3.forward;
+        return (player != null && player.HasMovementInput)
+            ? player.DesiredPlanarMoveDirection
+            : Vector3.forward;
     }
 }

@@ -1,12 +1,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class CustomerManager : MonoBehaviour
 {
     [Header("Spawn")]
     [SerializeField] private Customer customerPrefab;
-    [SerializeField] private Customer bonkCustomerPrefab;
     [SerializeField] private CustomerPartyAI partyCustomerPrefab;
     [SerializeField] private Transform[] spawnPoints;
     [SerializeField] private Transform exitPoint;
@@ -22,9 +22,6 @@ public class CustomerManager : MonoBehaviour
     [Range(0f, 1f)] [SerializeField] private float day3RushOccupancy = 0.95f;
     [Range(0f, 1f)] [SerializeField] private float day3AfternoonOccupancy = 0.55f;
     [Range(0f, 1f)] [SerializeField] private float day3ClosingOccupancy = 0.25f;
-    [Header("Day 3 Bonk Customers")]
-    [SerializeField] private int day3MaxBonkCustomers = 2;
-    [Range(0f, 1f)] [SerializeField] private float day3SecondBonkChance = 0.5f;
     [Header("Day 3 Table Expansion")]
     [SerializeField] private Transform day3TableSource;
     [SerializeField] private Vector3 day3TableOffset = new Vector3(0f, 0f, -8f);
@@ -33,27 +30,29 @@ public class CustomerManager : MonoBehaviour
     [Range(0f, 1f)] [SerializeField] private float day4RushOccupancy = 1f;
     [Range(0f, 1f)] [SerializeField] private float day4AfternoonOccupancy = 0.78f;
     [Range(0f, 1f)] [SerializeField] private float day4ClosingOccupancy = 0.42f;
-    [SerializeField] private int day4MaxBonkCustomers = 3;
-    [Tooltip("Chance the first bonk of the day spawns at all (lower = more seated customers = more spills).")]
-    [Range(0f, 1f)] [SerializeField] private float day4FirstBonkChance = 0.42f;
-    [Range(0f, 1f)] [SerializeField] private float day4SecondBonkChance = 0.48f;
     [SerializeField] private float day4SpawnIntervalMultiplier = 0.78f;
     [Header("Party Day Tuning")]
     [Range(0f, 1f)]
     [SerializeField] private float partyDayPartyCustomerChance = 0.7f;
     [Range(0f, 1f)]
     [SerializeField] private float partyDaySpillBaseChance = 1f;
-    [Header("Day 1 Bonk Customers")]
-    [Range(0f, 1f)]
-    [SerializeField] private float day1BonkCustomerChance = 0.35f;
     [Header("Spills")]
     [SerializeField] private SpillSpawner spillSpawner;
+    [Header("Party Day Rage")]
+    [Tooltip("Probability that a newly spawned party customer can turn angry near spills.")]
+    [Range(0f, 1f)]
+    [FormerlySerializedAs("angryConversionChance")]
+    [SerializeField] private float partyCustomerAngryChance = 0.40f;
+    [Header("Angry Customer Throttle")]
+    [SerializeField] private int maxActiveAngryCustomers = 1;
+    [SerializeField] private float angryConversionCooldownSeconds = 7f;
 
     private readonly List<Customer> activeCustomers = new List<Customer>();
     private readonly List<CustomerPartyAI> partyCustomers = new List<CustomerPartyAI>();
     private int activeCustomerCount;
     private Chair[] chairs;
     private GameObject day3TableClone;
+    private float nextAngryConversionAllowedTime;
 
     // ✅ Use this for your spill spawner
     public int CustomerCount => activeCustomerCount;
@@ -120,12 +119,32 @@ public class CustomerManager : MonoBehaviour
         return true;
     }
 
+    public bool TryAssignChair(CustomerPartyAI partyCustomer)
+    {
+        if (partyCustomer == null) return false;
+
+        Chair chair = GetNearestAvailableChair(partyCustomer.transform.position);
+        if (chair == null) return false;
+
+        if (!chair.TryReserve(partyCustomer)) return false;
+
+        partyCustomer.AssignReservedChair(chair);
+        return true;
+    }
+
     public void DespawnCustomer(Customer customer)
     {
         activeCustomers.Remove(customer);
         if (customer != null && customer.CountsTowardCapacity)
             activeCustomerCount = Mathf.Max(0, activeCustomerCount - 1);
         Destroy(customer.gameObject);
+    }
+
+    public void DespawnPartyCustomer(CustomerPartyAI partyCustomer)
+    {
+        partyCustomers.Remove(partyCustomer);
+        activeCustomerCount = Mathf.Max(0, activeCustomerCount - 1);
+        Destroy(partyCustomer.gameObject);
     }
 
     private IEnumerator SpawnLoop()
@@ -155,30 +174,13 @@ public class CustomerManager : MonoBehaviour
             return;
         }
 
-        int globalMax = spawnTuning == null ? 12 : spawnTuning.MaxActiveCustomers;
-        int reputationCap = reputation == null
-            ? globalMax
-            : reputation.GetCustomerCapForReputation();
-
-        int baseCap = Mathf.Min(globalMax, reputationCap);
-        float dirtinessMultiplier = restaurantManager == null
-            ? 1f
-            : restaurantManager.GetDirtinessCapMultiplier();
-        int dirtinessAdjustedCap = Mathf.FloorToInt(baseCap * dirtinessMultiplier);
-
-        if (dayCycle != null && dayCycle.DayCount == 1 && spawnTuning != null)
-            dirtinessAdjustedCap = Mathf.Max(dirtinessAdjustedCap, Mathf.FloorToInt(dirtinessAdjustedCap * spawnTuning.Day1CustomerCapMultiplier));
-
-        float dayMultiplier = dayCycle == null ? 1f : dayCycle.GetSpawnMultiplier();
-        int cap = Mathf.Max(1, Mathf.FloorToInt(dirtinessAdjustedCap * dayMultiplier));
-        if (dayCycle != null && (dayCycle.DayCount == 3 || dayCycle.DayCount == 4))
-            cap = Mathf.Max(cap, GetHighPressureFloorTargetCount());
+        int cap = CalculateTargetCustomerCapacity();
         if (logSpawnCaps)
         {
             string phase = dayCycle == null ? "None" : dayCycle.GetPhase().ToString();
             int dayCount = dayCycle == null ? 0 : dayCycle.DayCount;
             int chairsAvailable = GetAvailableChairCount();
-            Debug.Log($"Spawn cap calc -> day {dayCount}, phase {phase}, baseCap {baseCap}, dirtMult {dirtinessMultiplier:0.00}, dayMult {dayMultiplier:0.00}, cap {cap}, activeList {activeCustomers.Count}, activeCount {activeCustomerCount}, capCount {GetCustomersTowardCapacity()}, chairsOpen {chairsAvailable}", this);
+            Debug.Log($"Spawn cap calc -> day {dayCount}, phase {phase}, cap {cap}, activeList {activeCustomers.Count}, activeCount {activeCustomerCount}, capCount {GetCustomersTowardCapacity()}, chairsOpen {chairsAvailable}", this);
         }
         int customersTowardCap = GetCustomersTowardCapacity();
         if (customersTowardCap >= cap)
@@ -195,8 +197,6 @@ public class CustomerManager : MonoBehaviour
             return;
         }
         bool isPartyDay = dayCycle != null && dayCycle.DayCount == 2;
-        bool isDay3 = dayCycle != null && dayCycle.DayCount == 3;
-        bool isDay4 = dayCycle != null && dayCycle.DayCount == 4;
 
         if (isPartyDay && partyCustomerPrefab != null)
         {
@@ -205,29 +205,15 @@ public class CustomerManager : MonoBehaviour
                 CustomerPartyAI partyCustomer = Instantiate(partyCustomerPrefab, spawnPosition, spawnRotation);
                 partyCustomer.gameObject.SetActive(true);
                 partyCustomer.Initialize(this);
+                partyCustomer.SetCanTurnAngry(Random.value <= partyCustomerAngryChance);
                 partyCustomers.Add(partyCustomer);
                 activeCustomerCount++;
                 return;
             }
         }
 
-        bool isDay1 = dayCycle != null && dayCycle.DayCount == 1;
-        bool spawnBonkCustomer = ShouldSpawnBonkCustomer(isDay1, isDay3, isDay4);
-        Customer prefabToSpawn = spawnBonkCustomer && bonkCustomerPrefab != null
-            ? bonkCustomerPrefab
-            : customerPrefab;
-
-        Customer customer = Instantiate(prefabToSpawn, spawnPosition, spawnRotation);
+        Customer customer = Instantiate(customerPrefab, spawnPosition, spawnRotation);
         customer.Initialize(this);
-
-        if (spawnBonkCustomer)
-        {
-            customer.ConfigureAsBonkCustomer();
-            activeCustomers.Add(customer);
-            if (logSpawnCaps)
-                Debug.Log($"Spawned bonk customer at {spawnPosition}. ActiveList={activeCustomers.Count}, CapCount={GetCustomersTowardCapacity()}", this);
-            return;
-        }
 
         if (!TryAssignChair(customer))
         {
@@ -243,31 +229,59 @@ public class CustomerManager : MonoBehaviour
             Debug.Log($"Spawned normal customer at {spawnPosition}. ActiveList={activeCustomers.Count}, ActiveCount={activeCustomerCount}, CapCount={GetCustomersTowardCapacity()}", this);
     }
 
-    public Vector3 GetRandomBonkTarget()
+    public bool TryRegisterAngryCustomerRush()
     {
-        if (spawnPoints != null && spawnPoints.Length > 0)
-        {
-            Transform point = spawnPoints[Random.Range(0, spawnPoints.Length)];
-            if (point != null)
-            {
-                Vector3 candidate = point.position;
-                Vector2 jitter = Random.insideUnitCircle * 2.5f;
-                candidate.x += jitter.x;
-                candidate.z += jitter.y;
-                return candidate;
-            }
-        }
+        int activeAngryCustomers = GetActiveAngryCustomerCount();
+        if (activeAngryCustomers >= Mathf.Max(0, maxActiveAngryCustomers))
+            return false;
 
-        if (ThirdPersonController.Instance != null)
-        {
-            Vector3 candidate = ThirdPersonController.Instance.transform.position;
-            Vector2 jitter = Random.insideUnitCircle * 2f;
-            candidate.x += jitter.x;
-            candidate.z += jitter.y;
-            return candidate;
-        }
+        if (Time.time < nextAngryConversionAllowedTime)
+            return false;
 
-        return transform.position;
+        nextAngryConversionAllowedTime = Time.time + Mathf.Max(0f, angryConversionCooldownSeconds);
+        return true;
+    }
+
+    private int CalculateTargetCustomerCapacity()
+    {
+        int baselineCap = GetBaselineCustomerCap();
+        int dirtinessAdjustedCap = ApplyDirtinessCapPressure(baselineCap);
+        int phaseAdjustedCap = ApplyPhaseSpawnPressure(dirtinessAdjustedCap);
+
+        if (dayCycle != null && (dayCycle.DayCount == 3 || dayCycle.DayCount == 4))
+            phaseAdjustedCap = Mathf.Max(phaseAdjustedCap, GetHighPressureFloorTargetCount());
+
+        return Mathf.Max(1, phaseAdjustedCap);
+    }
+
+    private int GetBaselineCustomerCap()
+    {
+        int dayNumber = dayCycle == null ? 1 : dayCycle.DayCount;
+        int globalMax = spawnTuning == null ? 12 : spawnTuning.GetMaxActiveCustomersForDay(dayNumber);
+        int reputationCap = reputation == null
+            ? globalMax
+            : reputation.GetCustomerCapForReputation();
+
+        return Mathf.Min(globalMax, reputationCap);
+    }
+
+    private int ApplyDirtinessCapPressure(int baselineCap)
+    {
+        float dirtinessMultiplier = restaurantManager == null
+            ? 1f
+            : restaurantManager.GetDirtinessCapMultiplier();
+
+        int adjustedCap = Mathf.FloorToInt(baselineCap * dirtinessMultiplier);
+        if (dayCycle != null && dayCycle.DayCount == 1 && spawnTuning != null)
+            adjustedCap = Mathf.Max(adjustedCap, Mathf.FloorToInt(adjustedCap * spawnTuning.Day1CustomerCapMultiplier));
+
+        return adjustedCap;
+    }
+
+    private int ApplyPhaseSpawnPressure(int dirtinessAdjustedCap)
+    {
+        float phaseMultiplier = dayCycle == null ? 1f : dayCycle.GetSpawnMultiplier();
+        return Mathf.FloorToInt(dirtinessAdjustedCap * phaseMultiplier);
     }
 
     private bool TryGetSpawnPosition(out Vector3 spawnPosition, out Quaternion spawnRotation)
@@ -321,6 +335,13 @@ public class CustomerManager : MonoBehaviour
             count++;
         }
 
+        for (int i = 0; i < partyCustomers.Count; i++)
+        {
+            CustomerPartyAI customer = partyCustomers[i];
+            if (customer == null) continue;
+            count++;
+        }
+
         return count;
     }
 
@@ -351,46 +372,24 @@ public class CustomerManager : MonoBehaviour
         return count;
     }
 
-    private int GetActiveBonkCustomerCount()
+    private int GetActiveAngryCustomerCount()
     {
         int count = 0;
         for (int i = 0; i < activeCustomers.Count; i++)
         {
             Customer customer = activeCustomers[i];
-            if (customer == null || !customer.IsBonkCustomer) continue;
+            if (customer == null || !customer.IsAngryCustomer) continue;
+            count++;
+        }
+
+        for (int i = 0; i < partyCustomers.Count; i++)
+        {
+            CustomerPartyAI customer = partyCustomers[i];
+            if (customer == null || !customer.IsAngryCustomer) continue;
             count++;
         }
 
         return count;
-    }
-
-    private bool ShouldSpawnBonkCustomer(bool isDay1, bool isDay3, bool isDay4)
-    {
-        if (isDay4)
-        {
-            int activeBonks = GetActiveBonkCustomerCount();
-            if (activeBonks >= Mathf.Max(0, day4MaxBonkCustomers))
-                return false;
-
-            if (activeBonks <= 0)
-                return Random.value <= day4FirstBonkChance;
-
-            return Random.value <= day4SecondBonkChance;
-        }
-
-        if (isDay3)
-        {
-            int activeBonks = GetActiveBonkCustomerCount();
-            if (activeBonks >= Mathf.Max(0, day3MaxBonkCustomers))
-                return false;
-
-            if (activeBonks <= 0)
-                return true;
-
-            return Random.value <= day3SecondBonkChance;
-        }
-
-        return isDay1 && Random.value <= day1BonkCustomerChance;
     }
 
     private int GetHighPressureFloorTargetCount()
@@ -450,6 +449,13 @@ public class CustomerManager : MonoBehaviour
         {
             Customer customer = activeCustomers[i];
             if (customer == null || !customer.CountsTowardCapacity) continue;
+            recountedActive++;
+        }
+
+        for (int i = 0; i < partyCustomers.Count; i++)
+        {
+            CustomerPartyAI customer = partyCustomers[i];
+            if (customer == null) continue;
             recountedActive++;
         }
 
@@ -517,21 +523,26 @@ public class CustomerManager : MonoBehaviour
 
     private void HandleDayStarted(int dayNumber)
     {
-        ApplyDay3Tables(dayNumber >= 3);
+        // Despawn all regular customers so no one lingers between days.
+        for (int i = activeCustomers.Count - 1; i >= 0; i--)
+        {
+            Customer c = activeCustomers[i];
+            if (c != null) Destroy(c.gameObject);
+        }
+        activeCustomers.Clear();
+        activeCustomerCount = 0;
 
-        if (dayNumber == 2) return;
-
-        if (partyCustomers.Count == 0) return;
-
+        // Despawn ALL party customers
         for (int i = partyCustomers.Count - 1; i >= 0; i--)
         {
-            if (partyCustomers[i] == null) continue;
-            partyCustomers[i].CleanupSeats(false);
-            Destroy(partyCustomers[i].gameObject);
-            activeCustomerCount = Mathf.Max(0, activeCustomerCount - 1);
+            CustomerPartyAI p = partyCustomers[i];
+            if (p == null) continue;
+            p.CleanupSeats(false);
+            Destroy(p.gameObject);
         }
-
         partyCustomers.Clear();
+
+        ApplyDay3Tables(dayNumber >= 3);
     }
 
 }

@@ -13,6 +13,9 @@ public class PauseMenuUI : MonoBehaviour
     [Header("Input")]
     [SerializeField] private KeyCode toggleKey = KeyCode.Escape;
 
+    [Header("Layering")]
+    [SerializeField] private int sortingOrder = 500;
+
     private bool isVisible;
 
     private void Awake()
@@ -23,6 +26,8 @@ public class PauseMenuUI : MonoBehaviour
             canvasGroup = root.GetComponent<CanvasGroup>();
         if (gameFlow == null)
             gameFlow = GameFlowManager.Instance;
+
+        UISortingUtility.EnsureSorting(root != null ? root : gameObject, sortingOrder, true);
 
         if (continueButton != null)
             continueButton.onClick.AddListener(OnContinuePressed);

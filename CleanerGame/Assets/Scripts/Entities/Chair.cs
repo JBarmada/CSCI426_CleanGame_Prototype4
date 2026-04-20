@@ -6,47 +6,49 @@ public class Chair : MonoBehaviour
 
     public bool IsOccupied { get; private set; }
     public bool IsReserved { get; private set; }
-    private Customer currentCustomer;
-    private Customer reservedCustomer;
+    private Object currentOccupant;
+    private Object reservedOccupant;
 
     public Vector3 GetSeatPosition()
     {
         return seatPoint == null ? transform.position : seatPoint.position;
     }
 
-    public bool TryReserve(Customer customer)
+    public bool TryReserve(Object occupant)
     {
+        if (occupant == null) return false;
         if (IsOccupied || IsReserved) return false;
 
         IsReserved = true;
-        reservedCustomer = customer;
+        reservedOccupant = occupant;
         return true;
     }
 
-    public void ReleaseReservation(Customer customer)
+    public void ReleaseReservation(Object occupant)
     {
-        if (!IsReserved || reservedCustomer != customer) return;
+        if (!IsReserved || reservedOccupant != occupant) return;
 
         IsReserved = false;
-        reservedCustomer = null;
+        reservedOccupant = null;
     }
 
-    public bool TrySit(Customer customer)
+    public bool TrySit(Object occupant)
     {
+        if (occupant == null) return false;
         if (IsOccupied) return false;
-        if (IsReserved && reservedCustomer != customer) return false;
+        if (IsReserved && reservedOccupant != occupant) return false;
 
         IsOccupied = true;
         IsReserved = false;
-        reservedCustomer = null;
-        currentCustomer = customer;
+        reservedOccupant = null;
+        currentOccupant = occupant;
         return true;
     }
 
     public void CustomerLeft()
     {
         IsOccupied = false;
-        currentCustomer = null;
+        currentOccupant = null;
 
         SpawnDirt();
     }
@@ -55,8 +57,8 @@ public class Chair : MonoBehaviour
     {
         IsOccupied = false;
         IsReserved = false;
-        currentCustomer = null;
-        reservedCustomer = null;
+        currentOccupant = null;
+        reservedOccupant = null;
 
         if (spawnDirt)
             SpawnDirt();
@@ -68,4 +70,3 @@ public class Chair : MonoBehaviour
         // Instantiate dirt prefab here
     }
 }
-

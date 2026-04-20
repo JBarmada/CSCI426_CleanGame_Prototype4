@@ -25,6 +25,9 @@ public class DayPhaseHud : MonoBehaviour
     [SerializeField] private float holdSeconds = 1.5f;
     [SerializeField] private float fadeOutSeconds = 0.75f;
 
+    [Header("Layering")]
+    [SerializeField] private int sortingOrder = 300;
+
     private Coroutine fadeRoutine;
 
     private void Awake()
@@ -34,6 +37,8 @@ public class DayPhaseHud : MonoBehaviour
 
         if (dayCycle == null)
             dayCycle = FindFirstObjectByType<RestaurantDayCycle>();
+
+        UISortingUtility.EnsureSorting(gameObject, sortingOrder);
     }
 
     private void OnEnable()

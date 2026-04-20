@@ -13,6 +13,9 @@ public class CoinHud : MonoBehaviour
     [SerializeField] private float coinPulseDuration = 0.12f;
     [SerializeField] private float textPulseScale = 1.15f;
 
+    [Header("Layering")]
+    [SerializeField] private int sortingOrder = 300;
+
     private int lastWalletCoins;
     private Coroutine coinPulseRoutine;
     private Vector3 coinIconBaseScale;
@@ -34,6 +37,8 @@ public class CoinHud : MonoBehaviour
 
         if (dayCycle == null)
             dayCycle = FindFirstObjectByType<RestaurantDayCycle>();
+
+        UISortingUtility.EnsureSorting(gameObject, sortingOrder);
     }
 
     private void OnEnable()

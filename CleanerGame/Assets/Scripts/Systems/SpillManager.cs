@@ -1,8 +1,17 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider))]
 public class SpillManager : MonoBehaviour
 {
+    // ── Static registry so ThirdPersonController can cheaply query all live spills ──
+    private static readonly List<SpillManager> s_activeSpills = new List<SpillManager>();
+    /// <summary>All SpillManager instances currently alive in the scene.</summary>
+    public static IReadOnlyList<SpillManager> ActiveSpills => s_activeSpills;
+
+    /// <summary>True while the player is in range, holding the sweep key, and the spill isn't cleaned.</summary>
+    public bool IsBeingCleaned => playerInRange && !cleaned && Input.GetKey(sweepKey);
+
     [Header("Cleaning (Hold to Sweep)")]
     [SerializeField] private KeyCode sweepKey = KeyCode.Space;
     [SerializeField] private float sweepsPerSecond = 3f;   // 3 sweep motions / sec
@@ -59,6 +68,7 @@ public class SpillManager : MonoBehaviour
 
     private void Awake()
     {
+        s_activeSpills.Add(this);
         initialScale = transform.localScale;
         col = GetComponent<Collider>();
         col.isTrigger = true;
@@ -225,6 +235,11 @@ public class SpillManager : MonoBehaviour
         }
 
         DestroySelf();
+    }
+
+    private void OnDestroy()
+    {
+        s_activeSpills.Remove(this);
     }
 
     private void DestroySelf()

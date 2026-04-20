@@ -23,6 +23,16 @@ public class RestaurantReputation : MonoBehaviour
         return true;
     }
 
+    public int DebugAddReputation(int amount)
+    {
+        int clampedAmount = Mathf.Max(0, amount);
+        if (clampedAmount <= 0) return 0;
+
+        int before = reputation;
+        reputation = Mathf.Clamp(reputation + clampedAmount, 0, maxReputation);
+        return reputation - before;
+    }
+
     public void DebugSetReputation(int value)
     {
         reputation = Mathf.Clamp(value, 0, maxReputation);

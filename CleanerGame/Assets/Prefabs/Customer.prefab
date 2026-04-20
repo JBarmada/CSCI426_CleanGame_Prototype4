@@ -172,13 +172,19 @@ MonoBehaviour:
     customerPushStrength: 0.75
     playerPushIntentThreshold: 0.25
   emotions: {fileID: 0}
-  customeremotions: {fileID: 0}
-  startAsBonkCustomer: 0
-  bonkMoveSpeedMultiplier: 2.34
-  bonkLifetimeSeconds: 7
-  bonkLeaveSpeedMultiplier: 1.25
-  bonkSpawnLift: 0.5
-  bonkColorTint: {r: 1, g: 0.35, b: 0.35, a: 1}
+  regularCustomerEmotions: {fileID: 0}
+  angryRushMoveSpeedMultiplier: 2.34
+  angryExitSpeedMultiplier: 1.25
+  angryColorTint: {r: 1, g: 0.35, b: 0.35, a: 1}
+  canTurnAngryChance: 0.488
+  angryCheckRadius: 2.5
+  angryRatePerSpill: 0.5
+  angryDecayRate: 0.1
+  angryRushDistance: 28
+  angryBonkDetectionRadius: 1.5
+  wallLayerMask:
+    serializedVersion: 2
+    m_Bits: 128
 --- !u!23 &3507544064272865603
 MeshRenderer:
   m_ObjectHideFlags: 0

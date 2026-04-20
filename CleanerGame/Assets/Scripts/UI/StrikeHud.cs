@@ -16,6 +16,9 @@ public class StrikeHud : MonoBehaviour
     [SerializeField] private float popUpSeconds = 0.12f;
     [SerializeField] private float popDownSeconds = 0.12f;
 
+    [Header("Layering")]
+    [SerializeField] private int sortingOrder = 300;
+
     private Vector3[] baseScales;
     private Coroutine[] popRoutines;
     private int lastCount = -1;
@@ -24,6 +27,8 @@ public class StrikeHud : MonoBehaviour
     {
         if (restaurantManager == null)
             restaurantManager = RestaurantManager.Instance;
+
+        UISortingUtility.EnsureSorting(gameObject, sortingOrder);
     }
 
     private void OnEnable()

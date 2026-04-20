@@ -22,6 +22,10 @@ public class RestaurantDayCycle : MonoBehaviour
     [SerializeField] private bool pauseBetweenDays = true;
     [SerializeField] private CustomerSpawnTuning spawnTuning;
 
+    [Header("Grace Period")]
+    [Tooltip("Seconds after closing time ends where the player can still clean spills before the next day begins.")]
+    [SerializeField] private float gracePeriodSeconds = 10f;
+
     [Header("Day Jingles")]
     [SerializeField] private AudioSource jingleSource;
     [SerializeField] private AudioClip morningJingle;
@@ -37,15 +41,26 @@ public class RestaurantDayCycle : MonoBehaviour
     private bool gameOver;
     private bool waitingForContinue;
 
+    // Grace period state
+    private bool  isInGracePeriod;
+    private float gracePeriodTimer;
+
     public int DayCount => dayCount;
     public bool IsClosed => currentPhase == DayPhase.Closing || gameOver;
     public bool IsGameOver => gameOver;
     public bool IsWaitingForContinue => waitingForContinue;
     public bool InfiniteDays => infiniteDays;
+    public bool IsInGracePeriod => isInGracePeriod;
+    public float GracePeriodTimeRemaining => gracePeriodTimer;
 
     public event Action<DayPhase> PhaseChanged;
-    public event Action<int> DayStarted;
+    public event Action<int>      DayStarted;
     public event Action<int, bool> DayEnded;
+
+    // Grace period events — subscribe in UI to show/hide countdown
+    public event Action<float> GracePeriodStarted;   // fired once with total seconds
+    public event Action<float> GracePeriodTick;      // fired every frame with remaining seconds
+    public event Action        GracePeriodEnded;     // fired when grace period is over
 
     private void Awake()
     {
@@ -58,10 +73,6 @@ public class RestaurantDayCycle : MonoBehaviour
     private void Update()
     {
         UpdateDayCycle(Time.deltaTime);
-
-        // Debug: Press K to skip to Day 3
-        if (Input.GetKeyDown(KeyCode.K))
-            DebugSkipToDay3();
     }
 
     public float GetSpawnMultiplier()
@@ -106,6 +117,8 @@ public class RestaurantDayCycle : MonoBehaviour
         dayTimer = 0f;
         dayCount = 1;
         waitingForContinue = false;
+        isInGracePeriod    = false;
+        gracePeriodTimer   = 0f;
         SetPhase(DayPhase.Morning);
         DayStarted?.Invoke(dayCount);
     }
@@ -114,6 +127,26 @@ public class RestaurantDayCycle : MonoBehaviour
     {
         if (gameOver || waitingForContinue) return;
 
+        // ── Grace period countdown ──────────────────────────────────────────
+        if (isInGracePeriod)
+        {
+            gracePeriodTimer -= deltaTime;
+            GracePeriodTick?.Invoke(Mathf.Max(0f, gracePeriodTimer));
+
+            if (gracePeriodTimer <= 0f)
+            {
+                isInGracePeriod = false;
+                GracePeriodEnded?.Invoke();
+
+                if (infiniteDays)
+                    StartNextDay();
+                else
+                    EndDay(true);
+            }
+            return;   // don't advance dayTimer while player is cleaning
+        }
+
+        // ── Normal day tick ─────────────────────────────────────────────────
         dayTimer += deltaTime;
 
         DayPhase phase = GetPhaseForTime(dayTimer);
@@ -122,20 +155,19 @@ public class RestaurantDayCycle : MonoBehaviour
 
         if (dayTimer >= dayLengthSeconds)
         {
-            if (infiniteDays)
-            {
-                StartNextDay();
-            }
-            else
-            {
-                EndDay(true);
-            }
+            // Lock into Closing and start the grace period
+            SetPhase(DayPhase.Closing);
+            isInGracePeriod  = true;
+            gracePeriodTimer = gracePeriodSeconds;
+            GracePeriodStarted?.Invoke(gracePeriodSeconds);
         }
     }
 
     private void StartNextDay()
     {
-        dayTimer = 0f;
+        dayTimer         = 0f;
+        isInGracePeriod  = false;
+        gracePeriodTimer = 0f;
         dayCount++;
         SetPhase(DayPhase.Morning);
         DayStarted?.Invoke(dayCount);
@@ -272,15 +304,25 @@ public class RestaurantDayCycle : MonoBehaviour
     }
 
     /// <summary>
-    /// Debug method to skip to Day 3. Right-click the RestaurantDayCycle component in the Inspector
-    /// and select "Debug / Skip to Day 3" from the context menu.
+    /// Skips directly to the specified day number. Safe to call at any time during play.
     /// </summary>
-    [ContextMenu("Debug / Skip to Day 3")]
-    public void DebugSkipToDay3()
+    public void DebugSkipToDay(int targetDay)
     {
-        dayCount = 2; // Set to 2 so the next call increments to 3
+        if (gameOver) return;
+        targetDay = Mathf.Clamp(targetDay, 1, Mathf.Max(1, maxDays));
+
+        // Reset all in-flight state so the skip feels like a real day transition
+        dayCount           = targetDay - 1;
+        dayTimer           = 0f;
+        isInGracePeriod    = false;
+        gracePeriodTimer   = 0f;
         waitingForContinue = false;
         StartNextDay();
-        Debug.Log("[DayCycle Debug] Skipped to Day 3");
+        Debug.Log($"[DayCycle Debug] Skipped to Day {targetDay}");
     }
+
+    [ContextMenu("Debug / Skip to Day 1")] public void DebugSkipToDay1() => DebugSkipToDay(1);
+    [ContextMenu("Debug / Skip to Day 2")] public void DebugSkipToDay2() => DebugSkipToDay(2);
+    [ContextMenu("Debug / Skip to Day 3")] public void DebugSkipToDay3() => DebugSkipToDay(3);
+    [ContextMenu("Debug / Skip to Day 4")] public void DebugSkipToDay4() => DebugSkipToDay(4);
 }

@@ -17,6 +17,9 @@ public class GameOverUI : MonoBehaviour
     [Range(0f, 1f)]
     [SerializeField] private float loseScreenVolume = 1f;
 
+    [Header("Layering")]
+    [SerializeField] private int sortingOrder = 200;
+
     private void Awake()
     {
         if (root == null)
@@ -27,6 +30,8 @@ public class GameOverUI : MonoBehaviour
             restaurantManager = RestaurantManager.Instance;
         if (gameFlow == null)
             gameFlow = GameFlowManager.Instance;
+
+        UISortingUtility.EnsureSorting(root != null ? root : gameObject, sortingOrder, true);
 
         if (newGameButton != null)
             newGameButton.onClick.AddListener(OnNewGamePressed);

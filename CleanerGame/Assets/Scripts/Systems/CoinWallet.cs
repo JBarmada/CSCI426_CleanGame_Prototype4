@@ -41,8 +41,6 @@ public class CoinWallet : MonoBehaviour
         if (dayCycle == null)
             dayCycle = FindFirstObjectByType<RestaurantDayCycle>();
 
-        DontDestroyOnLoad(gameObject);
-
         if (audioSource == null && coinClip != null)
         {
             audioSource = GetComponent<AudioSource>();
@@ -63,6 +61,9 @@ public class CoinWallet : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (Instance == this)
+            Instance = null;
+
         if (dayCycle != null)
             dayCycle.DayStarted -= HandleDayStarted;
     }

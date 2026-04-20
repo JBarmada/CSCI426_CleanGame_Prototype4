@@ -14,12 +14,17 @@ public class ReputationHud : MonoBehaviour
     [Header("Refresh")]
     [SerializeField] private float refreshSeconds = 0.25f;
 
+    [Header("Layering")]
+    [SerializeField] private int sortingOrder = 300;
+
     private float refreshTimer;
 
     private void Awake()
     {
         if (reputation == null)
             reputation = FindFirstObjectByType<RestaurantReputation>();
+
+        UISortingUtility.EnsureSorting(gameObject, sortingOrder);
     }
 
     private void OnEnable()
