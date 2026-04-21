@@ -30,11 +30,6 @@ public class SpillManager : MonoBehaviour
     [SerializeField] private float day2SweepsToCleanMultiplier = 0.75f;
     [SerializeField] private RestaurantDayCycle dayCycle;
 
-    [Header("Day 4 Tuning")]
-    [SerializeField] private bool useDay4Tuning = true;
-    [Tooltip("Multiplies required sweeps on the hardest day (values above 1 make spills harder to clear).")]
-    [SerializeField] private float day4SweepsToCleanMultiplier = 1.35f;
-
     [Header("Visuals")]
     [SerializeField] private SpriteRenderer spriteRenderer; // assign, or auto-find
     [SerializeField] private SpriteRenderer glowRenderer;   // child named "glow"
@@ -281,9 +276,6 @@ public class SpillManager : MonoBehaviour
         float target = Mathf.Max(1f, sweepsToClean);
         if (useDay2Tuning && dayCycle != null && dayCycle.DayCount == 2)
             target = Mathf.Max(1f, target * day2SweepsToCleanMultiplier);
-
-        if (useDay4Tuning && dayCycle != null && dayCycle.DayCount == 4)
-            target = Mathf.Max(1f, target * Mathf.Max(1f, day4SweepsToCleanMultiplier));
 
         return target;
     }

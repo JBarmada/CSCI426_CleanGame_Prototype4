@@ -18,7 +18,7 @@ public class RestaurantDayCycle : MonoBehaviour
     [SerializeField] private float afternoonSeconds = 15f;
     [SerializeField] private float closingSeconds = 5f;
     [SerializeField] private bool infiniteDays = true;
-    [SerializeField] private int maxDays = 4;
+    [SerializeField] private int maxDays = 3;
     [SerializeField] private bool pauseBetweenDays = true;
     [SerializeField] private CustomerSpawnTuning spawnTuning;
 
@@ -324,5 +324,4 @@ public class RestaurantDayCycle : MonoBehaviour
     [ContextMenu("Debug / Skip to Day 1")] public void DebugSkipToDay1() => DebugSkipToDay(1);
     [ContextMenu("Debug / Skip to Day 2")] public void DebugSkipToDay2() => DebugSkipToDay(2);
     [ContextMenu("Debug / Skip to Day 3")] public void DebugSkipToDay3() => DebugSkipToDay(3);
-    [ContextMenu("Debug / Skip to Day 4")] public void DebugSkipToDay4() => DebugSkipToDay(4);
 }

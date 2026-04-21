@@ -689,71 +689,6 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
---- !u!1001 &151042842
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 2030888503}
-    m_Modifications:
-    - target: {fileID: 2547957640469633045, guid: 291b2321874ff4d4a94e11bf7e18511d, type: 3}
-      propertyPath: m_Name
-      value: Starting spill
-      objectReference: {fileID: 0}
-    - target: {fileID: 8957324229693550010, guid: 291b2321874ff4d4a94e11bf7e18511d, type: 3}
-      propertyPath: m_LocalScale.y
-      value: 0.34999996
-      objectReference: {fileID: 0}
-    - target: {fileID: 8957324229693550010, guid: 291b2321874ff4d4a94e11bf7e18511d, type: 3}
-      propertyPath: m_LocalScale.z
-      value: 0.34999996
-      objectReference: {fileID: 0}
-    - target: {fileID: 8957324229693550010, guid: 291b2321874ff4d4a94e11bf7e18511d, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -6.47068
-      objectReference: {fileID: 0}
-    - target: {fileID: 8957324229693550010, guid: 291b2321874ff4d4a94e11bf7e18511d, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0.019000053
-      objectReference: {fileID: 0}
-    - target: {fileID: 8957324229693550010, guid: 291b2321874ff4d4a94e11bf7e18511d, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0.10996
-      objectReference: {fileID: 0}
-    - target: {fileID: 8957324229693550010, guid: 291b2321874ff4d4a94e11bf7e18511d, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 0.7071068
-      objectReference: {fileID: 0}
-    - target: {fileID: 8957324229693550010, guid: 291b2321874ff4d4a94e11bf7e18511d, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0.7071068
-      objectReference: {fileID: 0}
-    - target: {fileID: 8957324229693550010, guid: 291b2321874ff4d4a94e11bf7e18511d, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8957324229693550010, guid: 291b2321874ff4d4a94e11bf7e18511d, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8957324229693550010, guid: 291b2321874ff4d4a94e11bf7e18511d, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 90
-      objectReference: {fileID: 0}
-    - target: {fileID: 8957324229693550010, guid: 291b2321874ff4d4a94e11bf7e18511d, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8957324229693550010, guid: 291b2321874ff4d4a94e11bf7e18511d, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 291b2321874ff4d4a94e11bf7e18511d, type: 3}
 --- !u!1 &168336293 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 692763433524296401, guid: 47b5a1a0c32394a349c905d5a453b35f, type: 3}
@@ -2316,11 +2251,6 @@ MonoBehaviour:
   day3ClosingOccupancy: 0.3
   day3TableSource: {fileID: 0}
   day3TableOffset: {x: 0, y: 0, z: -8}
-  day4MorningOccupancy: 0.7
-  day4RushOccupancy: 1
-  day4AfternoonOccupancy: 0.88
-  day4ClosingOccupancy: 0.58
-  day4SpawnIntervalMultiplier: 0.55
   partyDayPartyCustomerChance: 1
   partyDaySpillBaseChance: 0.85
   spillSpawner: {fileID: 613359821}
@@ -3516,7 +3446,7 @@ MonoBehaviour:
   afternoonSeconds: 15
   closingSeconds: 5
   infiniteDays: 0
-  maxDays: 4
+  maxDays: 3
   pauseBetweenDays: 1
   spawnTuning: {fileID: 613359827}
   gracePeriodSeconds: 10
@@ -3588,7 +3518,6 @@ MonoBehaviour:
   baseSpawnIntervalSeconds: 2
   baseMaxActiveCustomers: 12
   day3MaxActiveCustomers: 18
-  day4MaxActiveCustomers: 19
   day1SpawnIntervalMultiplier: 0.75
   day1CustomerCapMultiplier: 1.35
   day1DirtinessThresholdBonusSpills: 3
@@ -3711,11 +3640,9 @@ MonoBehaviour:
   debugSkipDay1Key: 49
   debugSkipDay2Key: 50
   debugSkipDay3Key: 51
-  debugSkipDay4Key: 52
   debugSkipDay1NumpadKey: 257
   debugSkipDay2NumpadKey: 258
   debugSkipDay3NumpadKey: 259
-  debugSkipDay4NumpadKey: 260
 --- !u!1001 &615565453
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6461,7 +6388,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 8957324230153858721}
+  - {fileID: 1534900401}
   - {fileID: 1951079653}
   m_Father: {fileID: 2030888503}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -6482,7 +6409,6 @@ MonoBehaviour:
   - {fileID: 328245512}
   - {fileID: 949166841}
   - {fileID: 1134714078}
-  - {fileID: 2547957639990254350}
   - {fileID: 1534900400}
 --- !u!1001 &896825961
 PrefabInstance:
@@ -8314,20 +8240,15 @@ MonoBehaviour:
   ambientLitterVeryDirtyObjects: []
   spawnRuntimeDecorFromPrefabs: 1
   decorSpawnParent: {fileID: 0}
-  runtimeTrashPrefabPrimary: {fileID: 1350357917436474487, guid: 54e875ec4eab3eb468fee4d68590267f, type: 3}
-  runtimeTrashPrefabAlternate: {fileID: 4017672297414699477, guid: 0933a239c129c384083044112ac31a4e, type: 3}
-  useAlternateTrashPrefab: 0
-  runtimeTrashPoolSize: 3
-  trashScatterMinLocal: {x: -8.2, y: 0.02, z: -4.8}
-  trashScatterMaxLocal: {x: 5.8, y: 0.02, z: 5.2}
-  trashMinSeparationXZ: 2.1
-  trashUniformScale: 1.05
-  trashColliderPadding: 0.96
-  trashWallColliderMinHeightWorld: 1.12
-  trashWallColliderMinXZWorld: 1.35
-  trashActiveWhenDirty: 3
-  trashActiveWhenVeryDirty: 3
-  trashActiveWhenFilthy: 3
+  spillTracker: {fileID: 613359825}
+  spillDecorTrashBagPrefab: {fileID: 4474382198320302150, guid: 9cd1746789b311d4c9e0add4969236f1, type: 3}
+  spillDecorTrashBagLeaningPrefab: {fileID: 6639117812231567455, guid: f1ec968a35fc17c46983b683237bb2b0, type: 3}
+  spillDecorTrashContainerPrefab: {fileID: 6389990076356770115, guid: e9dcab155b5654347b90d2b435a992a3, type: 3}
+  spillDecorTrashCartPrefab: {fileID: 469650825304701907, guid: 70be6eeb08c5ae845948539c7779666e, type: 3}
+  spillDecorTrashCartOpenPrefab: {fileID: 469650825304701907, guid: 414cadc8392ee89489bb741f0e5d2848, type: 3}
+  spillDecorTrashGroup3Prefab: {fileID: 6187101037078133987, guid: 565029c83065d384897dc7b69c098d83, type: 3}
+  spillDecorTrashGroup4Prefab: {fileID: 6944781579530139119, guid: 624e5c23e65838048a6fb40fa47190a3, type: 3}
+  spillDecorTrashGroup5Prefab: {fileID: 5254529852550547412, guid: 3da04da5b261a594eb3a0cd540585bb7, type: 3}
   debrisObjects:
   - {fileID: 830120031}
   - {fileID: 830120041}
@@ -8443,11 +8364,6 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1224641067}
   m_Mesh: {fileID: -8363390734277612690, guid: ce3c9b544254741f18bd99446fcc08b5, type: 3}
---- !u!4 &1244364049 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 8957324229693550010, guid: 291b2321874ff4d4a94e11bf7e18511d, type: 3}
-  m_PrefabInstance: {fileID: 151042842}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1252322301
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -8804,7 +8720,7 @@ MonoBehaviour:
   resultImageImpactStartScale: 1.8
   resultImageImpactEndScale: 1
   resultImageImpactShakeStrength: 16
-  promotionDay: 4
+  promotionDay: 3
   reputationRequiredToPromote: 3
   promotionCostCoins: 25
   reputationStarCostCoins: 17
@@ -11391,7 +11307,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 8957324230153858721}
+  m_Father: {fileID: 896443175}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1534900402
 MonoBehaviour:
@@ -14578,7 +14494,6 @@ Transform:
   - {fileID: 1038599348}
   - {fileID: 896443175}
   - {fileID: 1730531696}
-  - {fileID: 1244364049}
   - {fileID: 446101165}
   - {fileID: 1605147067}
   m_Father: {fileID: 0}
@@ -15481,11 +15396,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ffc7256d5dfaf9c418d05283585aa4fd, type: 3}
---- !u!1 &2547957639990254350 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 1642107727725399604, guid: c3fee057cc1324a15bd1766585b0c62c, type: 3}
-  m_PrefabInstance: {fileID: 8310988514642540262}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &3367601844064701553
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -15837,75 +15747,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9525e527b9604634a9dc0cfcf4f858b9, type: 3}
---- !u!1001 &8310988514642540262
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 896443175}
-    m_Modifications:
-    - target: {fileID: 1642107727725399604, guid: c3fee057cc1324a15bd1766585b0c62c, type: 3}
-      propertyPath: m_Name
-      value: WaterSpill
-      objectReference: {fileID: 0}
-    - target: {fileID: 1865436419789713196, guid: c3fee057cc1324a15bd1766585b0c62c, type: 3}
-      propertyPath: m_IsTrigger
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8569900073883916043, guid: c3fee057cc1324a15bd1766585b0c62c, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -1.8922
-      objectReference: {fileID: 0}
-    - target: {fileID: 8569900073883916043, guid: c3fee057cc1324a15bd1766585b0c62c, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0.019000053
-      objectReference: {fileID: 0}
-    - target: {fileID: 8569900073883916043, guid: c3fee057cc1324a15bd1766585b0c62c, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -2.9747
-      objectReference: {fileID: 0}
-    - target: {fileID: 8569900073883916043, guid: c3fee057cc1324a15bd1766585b0c62c, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 0.7071068
-      objectReference: {fileID: 0}
-    - target: {fileID: 8569900073883916043, guid: c3fee057cc1324a15bd1766585b0c62c, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0.7071068
-      objectReference: {fileID: 0}
-    - target: {fileID: 8569900073883916043, guid: c3fee057cc1324a15bd1766585b0c62c, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8569900073883916043, guid: c3fee057cc1324a15bd1766585b0c62c, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8569900073883916043, guid: c3fee057cc1324a15bd1766585b0c62c, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 90
-      objectReference: {fileID: 0}
-    - target: {fileID: 8569900073883916043, guid: c3fee057cc1324a15bd1766585b0c62c, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8569900073883916043, guid: c3fee057cc1324a15bd1766585b0c62c, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 8569900073883916043, guid: c3fee057cc1324a15bd1766585b0c62c, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1534900401}
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: c3fee057cc1324a15bd1766585b0c62c, type: 3}
---- !u!4 &8957324230153858721 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 8569900073883916043, guid: c3fee057cc1324a15bd1766585b0c62c, type: 3}
-  m_PrefabInstance: {fileID: 8310988514642540262}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

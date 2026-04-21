@@ -6,7 +6,11 @@ public class RestaurantSpillTracker : MonoBehaviour
 
     public int SpillsCleaned => spillsCleaned;
 
+    /// <summary>How many spill prefabs were spawned this in-game day (drives decorative trash).</summary>
+    public int SpillsSpawnedThisDay => spillsSpawnedThisDay;
+
     private int spillsCleaned;
+    private int spillsSpawnedThisDay;
 
     private void Awake()
     {
@@ -31,8 +35,14 @@ public class RestaurantSpillTracker : MonoBehaviour
         spillsCleaned++;
     }
 
+    public void RegisterSpillSpawned()
+    {
+        spillsSpawnedThisDay++;
+    }
+
     private void HandleDayStarted(int day)
     {
         spillsCleaned = 0;
+        spillsSpawnedThisDay = 0;
     }
 }

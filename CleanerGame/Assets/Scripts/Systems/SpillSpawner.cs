@@ -43,6 +43,9 @@ public class SpillSpawner : MonoBehaviour
             return false;
 
         Instantiate(spillPrefab, pos, Quaternion.Euler(90f, 0f, 0f));
+        var tracker = FindFirstObjectByType<RestaurantSpillTracker>();
+        if (tracker != null)
+            tracker.RegisterSpillSpawned();
         return true;
     }
 

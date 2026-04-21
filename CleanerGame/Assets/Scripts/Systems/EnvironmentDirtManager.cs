@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,7 +7,7 @@ using UnityEngine;
 ///   - Wall / table / floor material tinting via MaterialPropertyBlock
 ///   - Clean: volumetric sparkle particles + optional manual decor
 ///   - Grime overlay sprites shown at VeryDirty+
-///   - Runtime trash walls (3 per filth tier by default) with solid colliders, random layout on tier changes
+///   - Spill-linked decorative trash: scripted WasteOvergrowth prefabs (left wall choreography → counter → right wall), matches live SpillManager count; no colliders
 ///   - Debris objects shown at Filthy
 ///   - Fly particle system and audio at Filthy
 /// </summary>
@@ -64,29 +63,27 @@ public class EnvironmentDirtManager : MonoBehaviour
     [SerializeField] private GameObject[] ambientLitterDirtyObjects;
     [SerializeField] private GameObject[] ambientLitterVeryDirtyObjects;
 
-    [Header("Runtime trash pool (WasteOvergrowth)")]
+    [Header("Spill-driven decorative trash (scripted path, no colliders)")]
     [SerializeField] private bool spawnRuntimeDecorFromPrefabs = true;
-    [Tooltip("Parent for spawned props; defaults to GameObject named grime_and_debris")]
+    [Tooltip("Parent for sparkles etc.; defaults to grime_and_debris")]
     [SerializeField] private Transform decorSpawnParent;
-    [SerializeField] private GameObject runtimeTrashPrefabPrimary;
-    [SerializeField] private GameObject runtimeTrashPrefabAlternate;
-    [Tooltip("If off, only the primary prefab is used (avoids invisible or broken alternate assets).")]
-    [SerializeField] private bool useAlternateTrashPrefab;
-    [Tooltip("Trash prefab instances spawned (auto at least max of tier counts)")]
-    [SerializeField] private int runtimeTrashPoolSize = 3;
-    [SerializeField] private Vector3 trashScatterMinLocal = new Vector3(-8.2f, 0.02f, -4.8f);
-    [SerializeField] private Vector3 trashScatterMaxLocal = new Vector3(5.8f, 0.02f, 5.2f);
-    [Tooltip("Minimum distance on XZ between trash roots so piles do not stack")]
-    [SerializeField] private float trashMinSeparationXZ = 2.1f;
-    [SerializeField] private float trashUniformScale = 1.05f;
-    [Tooltip("Multiplier on renderer bounds before clamping to mins (lower = tighter to mesh)")]
-    [SerializeField] private float trashColliderPadding = 0.96f;
-    [Tooltip("Minimum world size only when mesh bounds are tiny (keeps CharacterController from stepping over)")]
-    [SerializeField] private float trashWallColliderMinHeightWorld = 1.12f;
-    [SerializeField] private float trashWallColliderMinXZWorld = 1.35f;
-    [SerializeField] private int trashActiveWhenDirty = 3;
-    [SerializeField] private int trashActiveWhenVeryDirty = 3;
-    [SerializeField] private int trashActiveWhenFilthy = 3;
+    [SerializeField] private RestaurantSpillTracker spillTracker;
+    [Tooltip("Prefab_TrashBag")]
+    [SerializeField] private UnityEngine.Object spillDecorTrashBagPrefab;
+    [Tooltip("Prefab_Trahbbag_Leaning")]
+    [SerializeField] private UnityEngine.Object spillDecorTrashBagLeaningPrefab;
+    [Tooltip("Trash bin for counter / right-wall variety")]
+    [SerializeField] private UnityEngine.Object spillDecorTrashContainerPrefab;
+    [Tooltip("Prefab_TrashCart (closed)")]
+    [SerializeField] private UnityEngine.Object spillDecorTrashCartPrefab;
+    [Tooltip("Prefab_TrashCart_Opened")]
+    [SerializeField] private UnityEngine.Object spillDecorTrashCartOpenPrefab;
+    [Tooltip("Prefab_TrashGroup_3 (replaces cart pair)")]
+    [SerializeField] private UnityEngine.Object spillDecorTrashGroup3Prefab;
+    [Tooltip("Prefab_TrashGroup_4 (replaces first two bags)")]
+    [SerializeField] private UnityEngine.Object spillDecorTrashGroup4Prefab;
+    [Tooltip("Prefab_TrashGroup_5 (replaces group4 / group4+bag)")]
+    [SerializeField] private UnityEngine.Object spillDecorTrashGroup5Prefab;
 
     [Header("Debris (Filthy only)")]
     [SerializeField] private GameObject[] debrisObjects;
@@ -120,7 +117,23 @@ public class EnvironmentDirtManager : MonoBehaviour
     private Color[] floorBaseColors;
 
     private GameObject[] _spawnedCleanSparklePrefabs = System.Array.Empty<GameObject>();
-    private GameObject[] _runtimeTrashPool = System.Array.Empty<GameObject>();
+    private Transform _spillTrashDecorRoot;
+    /// <summary>Last observed <see cref="SpillManager.ActiveSpills"/> count (decor rebuild when it changes).</summary>
+    private int _lastActiveSpillCount = int.MinValue;
+
+    private const float ScriptedLeftWallX = -9.86f;
+    /// <summary>Extra local X (negative = further left) for left-wall group/cart tier (spill 3+), not single bags at zBagMid/zBagLean.</summary>
+    private const float ScriptedLeftWallGroupClusterExtraX = -0.28f;
+    private const float ScriptedRightWallX = 9.86f;
+    private const float ScriptedFloorY = 0.02f;
+    private const float ScriptedCounterZ = 2.78f;
+    private const int ScriptedLeftWallSpillCap = 8;
+    private const int ScriptedCounterSlots = 6;
+    private const int ScriptedRightWallSlots = 6;
+    private static readonly Vector3 ScriptedYawLeft = new Vector3(0f, 90f, 0f);
+    private static readonly Vector3 ScriptedYawRight = new Vector3(0f, -90f, 0f);
+    private static readonly Vector3 ScriptedYawCounter = new Vector3(0f, 180f, 0f);
+
     private ParticleSystem _cleanRoomSparkles;
     private Transform _cleanFxRoot;
 
@@ -161,8 +174,14 @@ public class EnvironmentDirtManager : MonoBehaviour
         SetObjects(_combinedClean, false);
         SetObjects(_combinedAmbientDirty, false);
         SetObjects(_combinedAmbientVeryDirty, false);
-        SetRuntimeTrashActiveCount(0);
         SetCleanSparklesPlaying(false);
+
+        if (spillTracker == null)
+            spillTracker = FindFirstObjectByType<RestaurantSpillTracker>();
+
+        EnsureSpillTrashDecorRoot();
+        RebuildSpillTrashDecor();
+        _lastActiveSpillCount = CountActiveSpillsForDecor();
 
         if (restaurantManager != null)
         {
@@ -187,6 +206,16 @@ public class EnvironmentDirtManager : MonoBehaviour
         ApplyTint(floorRenderers, floorBaseColors);
 
         UpdateFlyAudio();
+
+        if (spillTracker == null)
+            spillTracker = FindFirstObjectByType<RestaurantSpillTracker>();
+
+        int activeSpills = CountActiveSpillsForDecor();
+        if (activeSpills != _lastActiveSpillCount)
+        {
+            _lastActiveSpillCount = activeSpills;
+            RebuildSpillTrashDecor();
+        }
 
         refreshTimer += Time.deltaTime;
         if (refreshTimer < refreshSeconds) return;
@@ -219,23 +248,6 @@ public class EnvironmentDirtManager : MonoBehaviour
 
         SetObjects(_combinedDirtyClutter, dirtyOrWorse);
         SetObjects(_combinedVeryDirtyClutter, veryDirtyOrWorse);
-
-        int trashCount = 0;
-        if (dirtyOrWorse)
-        {
-            int cap = filthy
-                ? Mathf.Min(trashActiveWhenFilthy, _runtimeTrashPool.Length)
-                : veryDirtyOrWorse
-                    ? Mathf.Min(trashActiveWhenVeryDirty, _runtimeTrashPool.Length)
-                    : Mathf.Min(trashActiveWhenDirty, _runtimeTrashPool.Length);
-            trashCount = cap;
-        }
-
-        // New layout whenever filth tier changes while trash is in use (e.g. Clean→Dirty, Dirty→VeryDirty).
-        if (dirtyOrWorse && previousLevel != level && _runtimeTrashPool.Length > 0)
-            RepositionRuntimeTrash();
-
-        SetRuntimeTrashActiveCount(trashCount);
 
         SetGrimeOverlays(veryDirtyOrWorse);
         SetDebris(filthy);
@@ -331,50 +343,276 @@ public class EnvironmentDirtManager : MonoBehaviour
             _spawnedCleanSparklePrefabs = list.ToArray();
         }
 
-        if (runtimeTrashPrefabPrimary != null || runtimeTrashPrefabAlternate != null)
+    }
+
+    private void EnsureSpillTrashDecorRoot()
+    {
+        if (_spillTrashDecorRoot != null)
+            return;
+
+        Transform trashParent = decorSpawnParent;
+        if (trashParent == null)
         {
-            int tierMax = Mathf.Max(1, Mathf.Max(trashActiveWhenDirty, Mathf.Max(trashActiveWhenVeryDirty, trashActiveWhenFilthy)));
-            int poolSize = Mathf.Max(runtimeTrashPoolSize, tierMax);
+            var grime = GameObject.Find("grime_and_debris");
+            trashParent = grime != null ? grime.transform : transform;
+        }
 
-            Transform trashParent = parent;
-            var restaurantGo = GameObject.Find("Restaurant");
-            if (restaurantGo != null)
-                trashParent = restaurantGo.transform;
+        var restaurantGo = GameObject.Find("Restaurant");
+        if (restaurantGo != null)
+            trashParent = restaurantGo.transform;
 
-            var trashRoot = new GameObject("Runtime_TrashPool").transform;
-            trashRoot.SetParent(trashParent, false);
-            trashRoot.localPosition = Vector3.zero;
-            trashRoot.localRotation = Quaternion.identity;
-            trashRoot.localScale = Vector3.one;
+        var rootGo = new GameObject("Runtime_SpillTrashDecor");
+        _spillTrashDecorRoot = rootGo.transform;
+        _spillTrashDecorRoot.SetParent(trashParent, false);
+        _spillTrashDecorRoot.localPosition = Vector3.zero;
+        _spillTrashDecorRoot.localRotation = Quaternion.identity;
+        _spillTrashDecorRoot.localScale = Vector3.one;
+    }
 
-            var placed = new List<Vector3>(poolSize);
-            var pool = new List<GameObject>(poolSize);
-            for (int i = 0; i < poolSize; i++)
-            {
-                var prefab = PickTrashPrefab(i);
-                if (prefab == null)
-                    continue;
+    private readonly struct SpillDecorSpawn
+    {
+        public readonly Vector3 LocalPosition;
+        public readonly Vector3 LocalEuler;
+        public readonly float Scale;
+        public readonly UnityEngine.Object Prefab;
 
-                var go = Instantiate(prefab, trashRoot);
-                go.name = $"{prefab.name}_Pool_{i}";
-                go.transform.localPosition = PickRandomTrashLocal(placed);
-                go.transform.localRotation = Quaternion.Euler(0f, UnityEngine.Random.Range(0f, 360f), 0f);
-                go.transform.localScale = Vector3.one * trashUniformScale;
-                InstallTrashWallCollider(go);
-                go.SetActive(false);
-                pool.Add(go);
-                placed.Add(go.transform.localPosition);
-            }
-
-            _runtimeTrashPool = pool.ToArray();
+        public SpillDecorSpawn(Vector3 localPosition, Vector3 localEuler, float scale, UnityEngine.Object prefab)
+        {
+            LocalPosition = localPosition;
+            LocalEuler = localEuler;
+            Scale = scale;
+            Prefab = prefab;
         }
     }
 
-    private GameObject PickTrashPrefab(int i)
+    private void RebuildSpillTrashDecor()
     {
-        if (useAlternateTrashPrefab && runtimeTrashPrefabAlternate != null && runtimeTrashPrefabPrimary != null)
-            return (i % 2 == 0) ? runtimeTrashPrefabPrimary : runtimeTrashPrefabAlternate;
-        return runtimeTrashPrefabPrimary != null ? runtimeTrashPrefabPrimary : runtimeTrashPrefabAlternate;
+        if (!spawnRuntimeDecorFromPrefabs || _spillTrashDecorRoot == null)
+            return;
+
+        for (int c = _spillTrashDecorRoot.childCount - 1; c >= 0; c--)
+            Destroy(_spillTrashDecorRoot.GetChild(c).gameObject);
+
+        if (spillTracker == null)
+            spillTracker = FindFirstObjectByType<RestaurantSpillTracker>();
+
+        int spillCount = CountActiveSpillsForDecor();
+        if (spillCount <= 0)
+            return;
+
+        var spawns = new List<SpillDecorSpawn>(24);
+        CollectScriptedSpillDecorSpawns(spillCount, spawns);
+
+        for (int i = 0; i < spawns.Count; i++)
+        {
+            SpillDecorSpawn s = spawns[i];
+            if (s.Prefab == null)
+                continue;
+
+            var dec = InstantiateSpillDecorPrefab(s.Prefab, _spillTrashDecorRoot);
+            if (dec == null)
+                continue;
+
+            dec.name = $"SpillDecor_{dec.name}_{i}";
+            ApplyDecorTransform(dec.transform, s.LocalPosition, s.LocalEuler, s.Scale);
+            DisableGameplayColliders(dec);
+        }
+    }
+
+    private static int CountActiveSpillsForDecor()
+    {
+        return SpillManager.ActiveSpills.Count;
+    }
+
+    private void CollectScriptedSpillDecorSpawns(int spillCount, List<SpillDecorSpawn> list)
+    {
+        list.Clear();
+        int leftUsed = Mathf.Min(spillCount, ScriptedLeftWallSpillCap);
+        AppendLeftWallChoreography(leftUsed, list);
+        if (spillCount > ScriptedLeftWallSpillCap)
+            AppendCounterThenRightWall(spillCount - ScriptedLeftWallSpillCap, list);
+    }
+
+    /// <summary>
+    /// Spills 1–2: upright bag then leaning bag (moving +Z). 3: TrashGroup_4 only. 4: group4 + bag above.
+    /// 5: TrashGroup_5 only. 6–7: group5 + closed cart + opened cart. 8+: group5 + TrashGroup_3 (replaces carts).
+    /// Group/cart tier uses <see cref="ScriptedLeftWallGroupClusterExtraX"/> so clusters sit further left than lone bags.
+    /// </summary>
+    private void AppendLeftWallChoreography(int n, List<SpillDecorSpawn> list)
+    {
+        if (n <= 0)
+            return;
+
+        float xBags = ScriptedLeftWallX;
+        float xGroups = ScriptedLeftWallX + ScriptedLeftWallGroupClusterExtraX;
+        float y = ScriptedFloorY;
+        Vector3 yL = ScriptedYawLeft;
+
+        float zBagMid = 0.18f;
+        float zBagLean = 1.42f;
+        float zGroupAnchor = 0.88f;
+        float zBagAboveGroup = 2.58f;
+        float zCartA = 3.38f;
+        float zCartB = 4.12f;
+        float zGroup3 = 3.74f;
+
+        var bag = spillDecorTrashBagPrefab;
+        var lean = spillDecorTrashBagLeaningPrefab != null ? spillDecorTrashBagLeaningPrefab : bag;
+        var g4 = spillDecorTrashGroup4Prefab;
+        var g5 = spillDecorTrashGroup5Prefab;
+        var cart = spillDecorTrashCartPrefab;
+        var open = spillDecorTrashCartOpenPrefab != null ? spillDecorTrashCartOpenPrefab : cart;
+        var g3 = spillDecorTrashGroup3Prefab;
+
+        if (n == 1)
+        {
+            list.Add(new SpillDecorSpawn(new Vector3(xBags, y, zBagMid), yL, 1f, bag));
+            return;
+        }
+
+        if (n == 2)
+        {
+            list.Add(new SpillDecorSpawn(new Vector3(xBags, y, zBagMid), yL, 1f, bag));
+            list.Add(new SpillDecorSpawn(new Vector3(xBags, y, zBagLean), yL, 1f, lean));
+            return;
+        }
+
+        if (n == 3)
+        {
+            list.Add(new SpillDecorSpawn(new Vector3(xGroups, y, zGroupAnchor), yL, 1f, g4));
+            return;
+        }
+
+        if (n == 4)
+        {
+            list.Add(new SpillDecorSpawn(new Vector3(xGroups, y, zGroupAnchor), yL, 1f, g4));
+            list.Add(new SpillDecorSpawn(new Vector3(xGroups, y, zBagAboveGroup), yL, 1f, bag));
+            return;
+        }
+
+        if (n == 5)
+        {
+            list.Add(new SpillDecorSpawn(new Vector3(xGroups, y, zGroupAnchor), yL, 1f, g5));
+            return;
+        }
+
+        if (n == 6)
+        {
+            list.Add(new SpillDecorSpawn(new Vector3(xGroups, y, zGroupAnchor), yL, 1f, g5));
+            list.Add(new SpillDecorSpawn(new Vector3(xGroups, y, zCartA), yL, 1f, cart));
+            return;
+        }
+
+        if (n == 7)
+        {
+            list.Add(new SpillDecorSpawn(new Vector3(xGroups, y, zGroupAnchor), yL, 1f, g5));
+            list.Add(new SpillDecorSpawn(new Vector3(xGroups, y, zCartA), yL, 1f, cart));
+            list.Add(new SpillDecorSpawn(new Vector3(xGroups, y, zCartB), yL, 1f, open));
+            return;
+        }
+
+        list.Add(new SpillDecorSpawn(new Vector3(xGroups, y, zGroupAnchor), yL, 1f, g5));
+        list.Add(new SpillDecorSpawn(new Vector3(xGroups, y, zGroup3), yL, 1f, g3));
+    }
+
+    /// <summary>Spill indices after the first 8: counter left→right, then right wall top→bottom. Uses trash group prefabs in a cycle.</summary>
+    private void AppendCounterThenRightWall(int remainingSpills, List<SpillDecorSpawn> list)
+    {
+        if (remainingSpills <= 0)
+            return;
+
+        int pathIndex = 0;
+        for (int i = 0; i < remainingSpills && i < ScriptedCounterSlots; i++, pathIndex++)
+        {
+            float t = ScriptedCounterSlots <= 1 ? 0f : i / (float)(ScriptedCounterSlots - 1);
+            float xPos = Mathf.Lerp(-2.1f, 2.1f, t);
+            list.Add(new SpillDecorSpawn(
+                new Vector3(xPos, ScriptedFloorY, ScriptedCounterZ),
+                ScriptedYawCounter,
+                1f,
+                PickCounterOrRightTrashGroupPrefab(pathIndex)));
+        }
+
+        if (remainingSpills <= ScriptedCounterSlots)
+            return;
+
+        int rightCount = remainingSpills - ScriptedCounterSlots;
+        for (int r = 0; r < rightCount && r < ScriptedRightWallSlots; r++, pathIndex++)
+        {
+            float t = ScriptedRightWallSlots <= 1 ? 0f : r / (float)(ScriptedRightWallSlots - 1);
+            float zPos = Mathf.Lerp(4.02f, -3.72f, t);
+            list.Add(new SpillDecorSpawn(
+                new Vector3(ScriptedRightWallX, ScriptedFloorY, zPos),
+                ScriptedYawRight,
+                1f,
+                PickCounterOrRightTrashGroupPrefab(pathIndex)));
+        }
+    }
+
+    /// <summary>Cycles TrashGroup_4 → TrashGroup_5 → TrashGroup_3 so counter/right-wall decor stays grouped like the left wall.</summary>
+    private UnityEngine.Object PickCounterOrRightTrashGroupPrefab(int pathIndex)
+    {
+        int phase = pathIndex % 3;
+        for (int attempt = 0; attempt < 3; attempt++)
+        {
+            int pick = (phase + attempt) % 3;
+            UnityEngine.Object chosen = pick switch
+            {
+                0 => spillDecorTrashGroup4Prefab,
+                1 => spillDecorTrashGroup5Prefab,
+                _ => spillDecorTrashGroup3Prefab
+            };
+            if (chosen != null)
+                return chosen;
+        }
+
+        if (spillDecorTrashBagPrefab != null)
+            return spillDecorTrashBagPrefab;
+        return spillDecorTrashContainerPrefab;
+    }
+
+    /// <summary>
+    /// Prefab references must be a scene/prefab <see cref="GameObject"/> root; if the inspector
+    /// stored a <see cref="Component"/>, we use its gameObject so Instantiate never hits InvalidCastException.
+    /// </summary>
+    private static GameObject ResolveSpillDecorPrefabRoot(UnityEngine.Object asset)
+    {
+        if (asset == null)
+            return null;
+        if (asset is GameObject go)
+            return go;
+        if (asset is Component c)
+            return c.gameObject;
+        Debug.LogWarning($"[EnvironmentDirtManager] Spill decor expects a GameObject prefab root; got {asset.GetType().Name} ({asset.name}). Reassign in the inspector.");
+        return null;
+    }
+
+    private static GameObject InstantiateSpillDecorPrefab(UnityEngine.Object prefabAsset, Transform parent)
+    {
+        var root = ResolveSpillDecorPrefabRoot(prefabAsset);
+        if (root == null)
+            return null;
+        return UnityEngine.Object.Instantiate(root, parent, false);
+    }
+
+    private static void ApplyDecorTransform(Transform t, Vector3 localPosition, Vector3 localEuler, float scale)
+    {
+        t.localPosition = localPosition;
+        t.localEulerAngles = localEuler;
+        float s = Mathf.Max(0.01f, scale);
+        t.localScale = Vector3.one * s;
+    }
+
+    private static void DisableGameplayColliders(GameObject root)
+    {
+        if (root == null)
+            return;
+        var cols = root.GetComponentsInChildren<Collider>(true);
+        for (int i = 0; i < cols.Length; i++)
+        {
+            if (cols[i] != null)
+                cols[i].enabled = false;
+        }
     }
 
     private static float Frac(float x)
@@ -393,137 +631,6 @@ public class EnvironmentDirtManager : MonoBehaviour
             Mathf.Lerp(min.x, max.x, u),
             Mathf.Lerp(min.y, max.y, v),
             Mathf.Lerp(min.z, max.z, w));
-    }
-
-    private Vector3 PickRandomTrashLocal(List<Vector3> placed)
-    {
-        return PickRandomTrashLocal(placed, null);
-    }
-
-    private Vector3 PickRandomTrashLocal(List<Vector3> placed, System.Random rng)
-    {
-        const int maxAttempts = 64;
-        float minX = Mathf.Min(trashScatterMinLocal.x, trashScatterMaxLocal.x);
-        float maxX = Mathf.Max(trashScatterMinLocal.x, trashScatterMaxLocal.x);
-        float minZ = Mathf.Min(trashScatterMinLocal.z, trashScatterMaxLocal.z);
-        float maxZ = Mathf.Max(trashScatterMinLocal.z, trashScatterMaxLocal.z);
-        float minY = Mathf.Min(trashScatterMinLocal.y, trashScatterMaxLocal.y);
-        float maxY = Mathf.Max(trashScatterMinLocal.y, trashScatterMaxLocal.y);
-        float sep = Mathf.Max(0.25f, trashMinSeparationXZ);
-        float sepSq = sep * sep;
-
-        float R(float a, float b)
-        {
-            if (rng != null)
-                return a + (float)rng.NextDouble() * (b - a);
-            return UnityEngine.Random.Range(a, b);
-        }
-
-        for (int attempt = 0; attempt < maxAttempts; attempt++)
-        {
-            var p = new Vector3(R(minX, maxX), R(minY, maxY), R(minZ, maxZ));
-
-            bool clear = true;
-            for (int i = 0; i < placed.Count; i++)
-            {
-                float dx = p.x - placed[i].x;
-                float dz = p.z - placed[i].z;
-                if (dx * dx + dz * dz < sepSq)
-                {
-                    clear = false;
-                    break;
-                }
-            }
-
-            if (clear)
-                return p;
-        }
-
-        return new Vector3(R(minX, maxX), minY, R(minZ, maxZ));
-    }
-
-    private void RepositionRuntimeTrash()
-    {
-        if (_runtimeTrashPool == null || _runtimeTrashPool.Length == 0)
-            return;
-
-        var rng = new System.Random(unchecked((int)(DateTime.UtcNow.Ticks ^ (GetInstanceID() * 397) ^ (_runtimeTrashPool.Length << 5))));
-
-        var placed = new List<Vector3>(_runtimeTrashPool.Length);
-        for (int i = 0; i < _runtimeTrashPool.Length; i++)
-        {
-            if (_runtimeTrashPool[i] == null)
-                continue;
-
-            Transform tr = _runtimeTrashPool[i].transform;
-            tr.localPosition = PickRandomTrashLocal(placed, rng);
-            tr.localRotation = Quaternion.Euler(0f, (float)rng.NextDouble() * 360f, 0f);
-            placed.Add(tr.localPosition);
-        }
-    }
-
-    /// <summary>
-    /// One solid box on the root so the player cannot step over low mesh colliders on the prefab.
-    /// Disables all existing colliders on the instance (they are often too small for CharacterController).
-    /// </summary>
-    private void InstallTrashWallCollider(GameObject root)
-    {
-        var colliders = root.GetComponentsInChildren<Collider>(true);
-        for (int i = 0; i < colliders.Length; i++)
-        {
-            if (colliders[i] != null)
-                colliders[i].enabled = false;
-        }
-
-        var rootBoxes = root.GetComponents<BoxCollider>();
-        for (int i = 0; i < rootBoxes.Length; i++)
-        {
-            if (rootBoxes[i] != null)
-                Destroy(rootBoxes[i]);
-        }
-
-        var renderers = root.GetComponentsInChildren<Renderer>();
-        Bounds wb;
-        if (renderers.Length == 0)
-        {
-            wb = new Bounds(root.transform.position,
-                new Vector3(trashWallColliderMinXZWorld, trashWallColliderMinHeightWorld, trashWallColliderMinXZWorld));
-        }
-        else
-        {
-            wb = renderers[0].bounds;
-            for (int r = 1; r < renderers.Length; r++)
-            {
-                if (renderers[r] != null && renderers[r].enabled)
-                    wb.Encapsulate(renderers[r].bounds);
-            }
-        }
-
-        Vector3 minWorld = new Vector3(trashWallColliderMinXZWorld, trashWallColliderMinHeightWorld, trashWallColliderMinXZWorld);
-        Vector3 worldSize = Vector3.Max(wb.size * trashColliderPadding, minWorld);
-        Vector3 cWorld = wb.center;
-
-        var box = root.AddComponent<BoxCollider>();
-        box.isTrigger = false;
-        Transform t = root.transform;
-        box.center = t.InverseTransformPoint(cWorld);
-        Vector3 lossy = t.lossyScale;
-        lossy.x = Mathf.Max(1e-4f, Mathf.Abs(lossy.x));
-        lossy.y = Mathf.Max(1e-4f, Mathf.Abs(lossy.y));
-        lossy.z = Mathf.Max(1e-4f, Mathf.Abs(lossy.z));
-        box.size = new Vector3(
-            worldSize.x / lossy.x,
-            worldSize.y / lossy.y,
-            worldSize.z / lossy.z);
-    }
-
-    private void SetRuntimeTrashActiveCount(int count)
-    {
-        for (int i = 0; i < _runtimeTrashPool.Length; i++)
-        {
-            if (_runtimeTrashPool[i] != null)
-                _runtimeTrashPool[i].SetActive(i < count);
-        }
     }
 
     private void SetCleanSparklesPlaying(bool playing)
