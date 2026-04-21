@@ -8294,12 +8294,40 @@ MonoBehaviour:
   - {fileID: 1683764466}
   dirtyTintColor: {r: 0.42, g: 0.29, b: 0.17, a: 1}
   tintTransitionSpeed: 0.4
+  cleanAestheticObjects: []
+  useRoomSparkleParticles: 1
+  sparkleVolumeCenterLocal: {x: 0, y: 1.15, z: 0}
+  sparkleVolumeHalfExtents: {x: 10, y: 2.5, z: 9}
+  sparkleEmissionRate: 55
+  sparkleParticleSize: 0.09
+  sparkleLifetime: 1.8
+  cleanSparklePrefab: {fileID: 1590415177872986601, guid: acdb90624a404aa438447006f1026065, type: 3}
+  cleanSparklePrefabCount: 0
+  cleanSparklePrefabScale: 0.22
   grimeOverlayObjects:
   - {fileID: 830120001}
   - {fileID: 830120011}
   - {fileID: 830120021}
   dirtyClutterObjects: []
   veryDirtyClutterObjects: []
+  ambientLitterDirtyObjects: []
+  ambientLitterVeryDirtyObjects: []
+  spawnRuntimeDecorFromPrefabs: 1
+  decorSpawnParent: {fileID: 0}
+  runtimeTrashPrefabPrimary: {fileID: 1350357917436474487, guid: 54e875ec4eab3eb468fee4d68590267f, type: 3}
+  runtimeTrashPrefabAlternate: {fileID: 4017672297414699477, guid: 0933a239c129c384083044112ac31a4e, type: 3}
+  useAlternateTrashPrefab: 0
+  runtimeTrashPoolSize: 3
+  trashScatterMinLocal: {x: -8.2, y: 0.02, z: -4.8}
+  trashScatterMaxLocal: {x: 5.8, y: 0.02, z: 5.2}
+  trashMinSeparationXZ: 2.1
+  trashUniformScale: 1.05
+  trashColliderPadding: 0.96
+  trashWallColliderMinHeightWorld: 1.12
+  trashWallColliderMinXZWorld: 1.35
+  trashActiveWhenDirty: 3
+  trashActiveWhenVeryDirty: 3
+  trashActiveWhenFilthy: 3
   debrisObjects:
   - {fileID: 830120031}
   - {fileID: 830120041}
@@ -10478,7 +10506,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 1651, y: -315}
+  m_AnchoredPosition: {x: 81, y: -417.8}
   m_SizeDelta: {x: 271.659, y: 78.7}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1441722556
@@ -10597,6 +10625,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::DirtinessHud
   statusText: {fileID: 1441722556}
   restaurantManager: {fileID: 613359819}
+  enableScreenFilthTint: 1
+  screenFilthTint: {fileID: 0}
   cleanText: Clean
   dirtyText: Dirty
   veryDirtyText: Very Dirty
@@ -10605,6 +10635,12 @@ MonoBehaviour:
   dirtyColor: {r: 0.45, g: 0.25, b: 0.1, a: 1}
   veryDirtyColor: {r: 0.7, g: 0.25, b: 0.1, a: 1}
   filthyColor: {r: 0.9, g: 0.1, b: 0.1, a: 1}
+  screenTintColor: {r: 0.18, g: 0.38, b: 0.16, a: 1}
+  screenTintAlphaClean: 0
+  screenTintAlphaDirty: 0.12
+  screenTintAlphaVeryDirty: 0.26
+  screenTintAlphaFilthy: 0.48
+  screenTintFadeSpeed: 3
   refreshSeconds: 0.25
   sortingOrder: 100
 --- !u!1 &1460187584
@@ -10644,7 +10680,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -1701, y: -444}
+  m_AnchoredPosition: {x: -76, y: -372.1}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 1, y: 1}
 --- !u!114 &1460187586
@@ -10887,7 +10923,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -1702.0999, y: -594.9}
+  m_AnchoredPosition: {x: -87, y: -518.1}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 1, y: 1}
 --- !u!114 &1470000003
