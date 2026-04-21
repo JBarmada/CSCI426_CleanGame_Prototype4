@@ -29,12 +29,13 @@ public class DayThree : MonoBehaviour
 
     private void ApplyState(bool enable)
     {
-        if (day3OnlyObjects == null) return;
-
-        for (int i = 0; i < day3OnlyObjects.Length; i++)
+        if (day3OnlyObjects != null)
         {
-            if (day3OnlyObjects[i] == null) continue;
-            day3OnlyObjects[i].SetActive(enable);
+            for (int i = 0; i < day3OnlyObjects.Length; i++)
+            {
+                if (day3OnlyObjects[i] == null) continue;
+                day3OnlyObjects[i].SetActive(enable);
+            }
         }
     }
 }

@@ -34,8 +34,8 @@ public class CustomerPartyAI : MonoBehaviour
     [SerializeField] private float angryBonkDetectionRadius = 1.5f;
     [SerializeField] private Color angryTintColor = new Color(1f, 0.35f, 0.35f, 1f);
 
-    [Header("Wall Collision")]
-    [Tooltip("Set this to the layer(s) your wall colliders live on.")]
+    [Header("Obstacle Collision")]
+    [Tooltip("Set this to the layer(s) your wall/table/chair colliders live on.")]
     [SerializeField] private LayerMask wallLayerMask;
 
     private CustomerManager manager;

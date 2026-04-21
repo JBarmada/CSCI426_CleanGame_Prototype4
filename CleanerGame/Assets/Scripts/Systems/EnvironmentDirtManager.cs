@@ -284,6 +284,7 @@ public class EnvironmentDirtManager : MonoBehaviour
             go.transform.localPosition = Vector3.zero;
 
             _cleanRoomSparkles = go.AddComponent<ParticleSystem>();
+            _cleanRoomSparkles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             var main = _cleanRoomSparkles.main;
             main.playOnAwake = false;
             main.loop = true;

@@ -25,6 +25,11 @@ public class RaindropLeakEffect : MonoBehaviour
 
     private Coroutine spawnCoroutine;
 
+    public void SetSpawnHeight(float value)
+    {
+        spawnHeight = Mathf.Max(0f, value);
+    }
+
     /// <summary>
     /// Start spawning raindrops for the given duration
     /// </summary>
@@ -93,10 +98,10 @@ public class RaindropLeakEffect : MonoBehaviour
         SpriteRenderer spriteRenderer = raindrop.AddComponent<SpriteRenderer>();
         spriteRenderer.sprite = raindropSprite;
         spriteRenderer.color = raindropColor;
-        spriteRenderer.sortingOrder = 0; // Adjust if needed
+        spriteRenderer.sortingOrder = 4;
 
-        // Set size via scale
-        raindrop.transform.localScale = Vector3.one * raindropSize;
+        // Stretch slightly so each drop reads as falling water instead of a static dot.
+        raindrop.transform.localScale = new Vector3(raindropSize * 0.45f, raindropSize * 1.6f, raindropSize);
 
         // Animate the fall
         StartCoroutine(AnimateRaindropFall(raindrop, puddlePos));

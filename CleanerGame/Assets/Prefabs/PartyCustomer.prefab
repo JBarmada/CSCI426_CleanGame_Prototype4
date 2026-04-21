@@ -370,7 +370,7 @@ MonoBehaviour:
   angryTintColor: {r: 1, g: 0.35, b: 0.35, a: 1}
   wallLayerMask:
     serializedVersion: 2
-    m_Bits: 128
+    m_Bits: 192
 --- !u!114 &1102676387024030566
 MonoBehaviour:
   m_ObjectHideFlags: 0

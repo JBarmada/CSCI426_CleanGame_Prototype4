@@ -14,11 +14,12 @@ public class WaterSpillManager : MonoBehaviour
     [Header("Leak Animation")]
     [SerializeField] private bool useLeakAnimation = true;
     [SerializeField] private float leakDuration = 3f; // How long the leak animation takes
-    [SerializeField] private float leakStartHeight = 2f; // How far above the final position to start
+    [SerializeField] private float leakStartHeight = 4.5f; // How far above the puddle the drops start
     [SerializeField] private RaindropLeakEffect raindropLeakEffect; // Raindrop animation effect
 
     private Vector3 finalPosition;
     private bool isLeaking;
+    private Coroutine leakCoroutine;
 
     private void OnEnable()
     {
@@ -37,14 +38,29 @@ public class WaterSpillManager : MonoBehaviour
         // Store the final position for leak animation
         finalPosition = waterSpillRoot.transform.position;
 
-        ApplyState(dayCycle != null && dayCycle.DayCount == 3);
+        bool isLevel3 = dayCycle != null && dayCycle.DayCount == 3;
+        ApplyState(isLevel3);
         ApplyColor();
+
+        if (isLevel3 && useLeakAnimation && !isLeaking)
+            leakCoroutine = StartCoroutine(PlayLeakAnimation());
     }
 
     private void OnDisable()
     {
         if (dayCycle != null)
             dayCycle.DayStarted -= HandleDayStarted;
+
+        if (leakCoroutine != null)
+        {
+            StopCoroutine(leakCoroutine);
+            leakCoroutine = null;
+        }
+
+        if (raindropLeakEffect != null)
+            raindropLeakEffect.StopRaindropLeak();
+
+        isLeaking = false;
     }
 
     private void HandleDayStarted(int dayNumber)
@@ -53,7 +69,7 @@ public class WaterSpillManager : MonoBehaviour
         {
             ApplyState(true);
             if (useLeakAnimation && !isLeaking)
-                StartCoroutine(PlayLeakAnimation());
+                leakCoroutine = StartCoroutine(PlayLeakAnimation());
         }
         else
         {
@@ -77,29 +93,22 @@ public class WaterSpillManager : MonoBehaviour
     {
         isLeaking = true;
 
-        // Start from above the final position
-        Vector3 startPosition = finalPosition + Vector3.up * leakStartHeight;
-        waterSpillRoot.transform.position = startPosition;
-
         // Make sprite start invisible
         Color startColor = waterSpillColor;
         startColor.a = 0f;
         if (waterSpillRenderer != null)
             waterSpillRenderer.color = startColor;
 
-        // Start raindrop leak effect if assigned
         if (raindropLeakEffect != null)
+        {
+            raindropLeakEffect.SetSpawnHeight(leakStartHeight);
             raindropLeakEffect.StartRaindropLeak(leakDuration);
+        }
 
-        // Animate the leak: position moves down, alpha increases
+        // Animate the leak: raindrops fall from above while the puddle appears on the floor.
         for (float elapsed = 0f; elapsed < leakDuration; elapsed += Time.deltaTime)
         {
             float t = Mathf.Clamp01(elapsed / leakDuration);
-
-            // Ease-out effect for downward movement
-            float easeT = 1f - Mathf.Pow(1f - t, 2f);
-            Vector3 currentPos = Vector3.Lerp(startPosition, finalPosition, easeT);
-            waterSpillRoot.transform.position = currentPos;
 
             // Fade in the sprite
             Color currentColor = waterSpillColor;
@@ -120,5 +129,6 @@ public class WaterSpillManager : MonoBehaviour
             raindropLeakEffect.StopRaindropLeak();
 
         isLeaking = false;
+        leakCoroutine = null;
     }
 }

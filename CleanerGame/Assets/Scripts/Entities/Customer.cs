@@ -37,8 +37,8 @@ public class Customer : MonoBehaviour
     [Tooltip("Distance within which the customer counts as having bonked the player and starts leaving.")]
     [SerializeField] private float angryBonkDetectionRadius = 1.5f;
 
-    [Header("Wall Collision")]
-    [Tooltip("Layer(s) your wall colliders live on. Customers will slide along these instead of stopping dead.")]
+    [Header("Obstacle Collision")]
+    [Tooltip("Layer(s) your wall/table/chair colliders live on. Customers will slide along these instead of passing through.")]
     [SerializeField] private LayerMask wallLayerMask;
 
     // ── Private state ─────────────────────────────────────────────────────────

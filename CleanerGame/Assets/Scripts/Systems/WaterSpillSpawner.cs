@@ -94,8 +94,8 @@ public class WaterSpillSpawner : MonoBehaviour
         // Debug: show where it's spawning (purple sphere visible in editor)
         Debug.DrawLine(spawnPos, spawnPos + Vector3.up * 2f, Color.magenta, 5f);
 
-        // Instantiate the water spill
-        GameObject newSpill = Instantiate(waterSpillPrefab, spawnPos, Quaternion.identity);
+        // Preserve the prefab's floor-facing rotation. Using identity makes the sprite stand upright.
+        GameObject newSpill = Instantiate(waterSpillPrefab, spawnPos, waterSpillPrefab.transform.rotation);
         newSpill.name = $"WaterSpill_Day3_{spillsSpawnedToday}";
 
         var tracker = FindFirstObjectByType<RestaurantSpillTracker>();

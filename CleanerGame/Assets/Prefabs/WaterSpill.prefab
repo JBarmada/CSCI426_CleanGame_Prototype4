@@ -132,11 +132,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WaterSpillManager
   dayCycle: {fileID: 0}
   waterSpillRoot: {fileID: 1642107727725399604}
-  waterSpillRenderer: {fileID: 740618833363802630}
+  waterSpillRenderer: {fileID: 6195378965037528163}
   waterSpillColor: {r: 0.2, g: 0.6, b: 0.9, a: 0.7}
   useLeakAnimation: 1
   leakDuration: 3
-  leakStartHeight: 2
+  leakStartHeight: 4.5
   raindropLeakEffect: {fileID: 5995430098177922532}
 --- !u!114 &7884096763710513118
 MonoBehaviour:
@@ -218,14 +218,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RaindropLeakEffect
   raindropSprite: {fileID: 21300000, guid: c1794cc84457f49f0b4db8ea5efe4851, type: 3}
-  raindropColor: {r: 1, g: 1, b: 1, a: 1}
+  raindropColor: {r: 0.45, g: 0.85, b: 1, a: 0.85}
   targetPuddle: {fileID: 1642107727725399604}
-  spawnHeight: 2
-  raindropSize: 0.5
-  fallDuration: 1.5
-  spawnInterval: 0.05
-  randomXOffset: 0.3
-  randomZOffset: 0.3
+  spawnHeight: 4.5
+  raindropSize: 0.42
+  fallDuration: 0.85
+  spawnInterval: 0.08
+  randomXOffset: 0.25
+  randomZOffset: 0.25
   fallCurve:
     serializedVersion: 2
     m_Curve:
