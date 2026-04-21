@@ -98,6 +98,10 @@ public class WaterSpillSpawner : MonoBehaviour
         GameObject newSpill = Instantiate(waterSpillPrefab, spawnPos, Quaternion.identity);
         newSpill.name = $"WaterSpill_Day3_{spillsSpawnedToday}";
 
+        var tracker = FindFirstObjectByType<RestaurantSpillTracker>();
+        if (tracker != null)
+            tracker.RegisterSpillSpawned();
+
         spillsSpawnedToday++;
         Debug.Log($"[WaterSpillSpawner] Spawned water spill #{spillsSpawnedToday} at position ({spawnPos.x:F2}, {spawnPos.y:F2}, {spawnPos.z:F2})");
     }

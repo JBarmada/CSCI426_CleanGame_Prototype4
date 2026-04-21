@@ -7,8 +7,7 @@ public class CustomerSpawnTuning : MonoBehaviour
     [SerializeField] private float baseSpawnIntervalSeconds = 6f;
     [FormerlySerializedAs("maxActiveCustomers")]
     [SerializeField] private int baseMaxActiveCustomers = 12;
-    [SerializeField] private int day3MaxActiveCustomers = 14;
-    [SerializeField] private int day4MaxActiveCustomers = 16;
+    [SerializeField] private int day3MaxActiveCustomers = 16;
 
     [Header("Day 1 Crowd Pressure")]
     [SerializeField] private float day1SpawnIntervalMultiplier = 0.8f;
@@ -53,16 +52,12 @@ public class CustomerSpawnTuning : MonoBehaviour
     public float BaseSpawnIntervalSeconds => baseSpawnIntervalSeconds;
     public int BaseMaxActiveCustomers => baseMaxActiveCustomers;
     public int Day3MaxActiveCustomers => Mathf.Max(1, day3MaxActiveCustomers);
-    public int Day4MaxActiveCustomers => Mathf.Max(1, day4MaxActiveCustomers);
     public float Day1SpawnIntervalMultiplier => day1SpawnIntervalMultiplier;
     public float Day1CustomerCapMultiplier => day1CustomerCapMultiplier;
     public int Day1DirtinessThresholdBonusSpills => day1DirtinessThresholdBonusSpills;
 
     public int GetMaxActiveCustomersForDay(int dayNumber)
     {
-        if (dayNumber >= 4)
-            return Day4MaxActiveCustomers;
-
         if (dayNumber >= 3)
             return Day3MaxActiveCustomers;
 

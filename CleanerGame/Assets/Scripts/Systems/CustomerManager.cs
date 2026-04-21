@@ -25,12 +25,6 @@ public class CustomerManager : MonoBehaviour
     [Header("Day 3 Table Expansion")]
     [SerializeField] private Transform day3TableSource;
     [SerializeField] private Vector3 day3TableOffset = new Vector3(0f, 0f, -8f);
-    [Header("Day 4 — Peak Night (hardest)")]
-    [Range(0f, 1f)] [SerializeField] private float day4MorningOccupancy = 0.55f;
-    [Range(0f, 1f)] [SerializeField] private float day4RushOccupancy = 1f;
-    [Range(0f, 1f)] [SerializeField] private float day4AfternoonOccupancy = 0.78f;
-    [Range(0f, 1f)] [SerializeField] private float day4ClosingOccupancy = 0.42f;
-    [SerializeField] private float day4SpawnIntervalMultiplier = 0.78f;
     [Header("Party Day Tuning")]
     [Range(0f, 1f)]
     [SerializeField] private float partyDayPartyCustomerChance = 0.7f;
@@ -248,7 +242,7 @@ public class CustomerManager : MonoBehaviour
         int dirtinessAdjustedCap = ApplyDirtinessCapPressure(baselineCap);
         int phaseAdjustedCap = ApplyPhaseSpawnPressure(dirtinessAdjustedCap);
 
-        if (dayCycle != null && (dayCycle.DayCount == 3 || dayCycle.DayCount == 4))
+        if (dayCycle != null && dayCycle.DayCount == 3)
             phaseAdjustedCap = Mathf.Max(phaseAdjustedCap, GetHighPressureFloorTargetCount());
 
         return Mathf.Max(1, phaseAdjustedCap);
@@ -398,13 +392,12 @@ public class CustomerManager : MonoBehaviour
         if (totalChairs <= 0 || dayCycle == null)
             return 0;
 
-        bool useDay4 = dayCycle.DayCount == 4;
         float occupancy = dayCycle.GetPhase() switch
         {
-            RestaurantDayCycle.DayPhase.Morning => useDay4 ? day4MorningOccupancy : day3MorningOccupancy,
-            RestaurantDayCycle.DayPhase.RushHour => useDay4 ? day4RushOccupancy : day3RushOccupancy,
-            RestaurantDayCycle.DayPhase.AfternoonSlowdown => useDay4 ? day4AfternoonOccupancy : day3AfternoonOccupancy,
-            _ => useDay4 ? day4ClosingOccupancy : day3ClosingOccupancy
+            RestaurantDayCycle.DayPhase.Morning => day3MorningOccupancy,
+            RestaurantDayCycle.DayPhase.RushHour => day3RushOccupancy,
+            RestaurantDayCycle.DayPhase.AfternoonSlowdown => day3AfternoonOccupancy,
+            _ => day3ClosingOccupancy
         };
 
         return Mathf.CeilToInt(totalChairs * Mathf.Clamp01(occupancy));
@@ -514,9 +507,6 @@ public class CustomerManager : MonoBehaviour
 
         if (dayCycle != null && dayCycle.DayCount == 1 && spawnTuning != null)
             interval *= Mathf.Clamp(spawnTuning.Day1SpawnIntervalMultiplier, 0.1f, 2f);
-
-        if (dayCycle != null && dayCycle.DayCount == 4)
-            interval *= Mathf.Clamp(day4SpawnIntervalMultiplier, 0.35f, 1f);
 
         return interval;
     }

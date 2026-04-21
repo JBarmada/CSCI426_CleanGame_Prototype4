@@ -37,11 +37,9 @@ public class DebugGameManager : MonoBehaviour
     [SerializeField] private KeyCode debugSkipDay1Key = KeyCode.Alpha1;
     [SerializeField] private KeyCode debugSkipDay2Key = KeyCode.Alpha2;
     [SerializeField] private KeyCode debugSkipDay3Key = KeyCode.Alpha3;
-    [SerializeField] private KeyCode debugSkipDay4Key = KeyCode.Alpha4;
     [SerializeField] private KeyCode debugSkipDay1NumpadKey = KeyCode.Keypad1;
     [SerializeField] private KeyCode debugSkipDay2NumpadKey = KeyCode.Keypad2;
     [SerializeField] private KeyCode debugSkipDay3NumpadKey = KeyCode.Keypad3;
-    [SerializeField] private KeyCode debugSkipDay4NumpadKey = KeyCode.Keypad4;
 
     private bool debugApplied;
 
@@ -71,8 +69,6 @@ public class DebugGameManager : MonoBehaviour
             DebugSkipToDay(2);
         else if (WasPressed(debugSkipDay3Key) || WasPressed(debugSkipDay3NumpadKey))
             DebugSkipToDay(3);
-        else if (WasPressed(debugSkipDay4Key) || WasPressed(debugSkipDay4NumpadKey))
-            DebugSkipToDay(4);
 
         if (!HasGameStarted()) return;
 
