@@ -1093,9 +1093,9 @@ MonoBehaviour:
   afternoonText: Afternoon Slow Down
   closingText: Closing Time
   morningColor: {r: 0.26254895, g: 0.6581276, b: 0.9433962, a: 1}
-  rushColor: {r: 0.8679245, g: 0.60883707, b: 0.1432894, a: 1}
-  afternoonColor: {r: 0.76766974, g: 0.53092736, b: 0.9150943, a: 1}
-  closingColor: {r: 0.9, g: 0.35, b: 0.3, a: 1}
+  rushColor: {r: 0.6615939, g: 0.8490566, b: 0.6448024, a: 1}
+  afternoonColor: {r: 0.83913815, g: 0.6516999, b: 0.9528302, a: 1}
+  closingColor: {r: 0.9245283, g: 0.46535084, b: 0.42301533, a: 1}
   fadeInSeconds: 0.5
   holdSeconds: 1.5
   fadeOutSeconds: 0.75
