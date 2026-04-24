@@ -12,11 +12,31 @@ public class SpillManager : MonoBehaviour
     /// <summary>True while the player is in range, holding the sweep key, and the spill isn't cleaned.</summary>
     public bool IsBeingCleaned => playerInRange && !cleaned && Input.GetKey(sweepKey);
 
+    public bool ContainsSlipPoint(Vector3 worldPosition)
+    {
+        if (cleaned || spriteRenderer == null)
+            return false;
+
+        Vector3 localPoint = spriteRenderer.transform.InverseTransformPoint(worldPosition);
+        Vector2 halfSize = spriteRenderer.size * 0.5f * Mathf.Max(0.1f, slipVisualFootprintScale);
+        if (halfSize.x <= 0f || halfSize.y <= 0f)
+            return false;
+
+        float normalizedX = localPoint.x / halfSize.x;
+        float normalizedY = localPoint.y / halfSize.y;
+        return (normalizedX * normalizedX) + (normalizedY * normalizedY) <= 1f;
+    }
+
     [Header("Cleaning (Hold to Sweep)")]
     [SerializeField] private KeyCode sweepKey = KeyCode.Space;
     [SerializeField] private float sweepsPerSecond = 3f;   // 3 sweep motions / sec
     [SerializeField] private int sweepsToClean = 3;        // total motions needed (3 @ 3/sec = 1s)
     [SerializeField] private float cleaningRadius = 1.15f;
+
+    [Header("Slip Trigger")]
+    [Tooltip("How much of the visible sprite can trigger slipping. 1 = full sprite, lower values require the player to be more centered on the spill.")]
+    [Range(0.1f, 1.25f)]
+    [SerializeField] private float slipVisualFootprintScale = 0.8f;
 
     [Header("Coins")]
     [SerializeField] private int coinsPerClean = 1;

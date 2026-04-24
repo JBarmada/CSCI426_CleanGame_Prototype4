@@ -125,7 +125,7 @@ GameObject:
   - component: {fileID: 5083530477836114688}
   - component: {fileID: 3507544064272865603}
   - component: {fileID: 404022695968251650}
-  - component: {fileID: 5214136877758785148}
+  - component: {fileID: 6001455650701662765}
   m_Layer: 0
   m_Name: Customer
   m_TagString: Customer
@@ -171,17 +171,20 @@ MonoBehaviour:
     playerPushWhilePushing: 0.35
     customerPushStrength: 0.75
     playerPushIntentThreshold: 0.25
+  blockedSitDistance: 0.75
+  blockedSitSeconds: 0.35
   emotions: {fileID: 0}
   regularCustomerEmotions: {fileID: 0}
   angryRushMoveSpeedMultiplier: 2.34
   angryExitSpeedMultiplier: 1.25
   angryColorTint: {r: 1, g: 0.35, b: 0.35, a: 1}
-  canTurnAngryChance: 0.488
+  canTurnAngryChance: 0.578
   angryCheckRadius: 2.5
-  angryRatePerSpill: 0.5
+  angryRatePerSpill: 0.45
   angryDecayRate: 0.1
   angryRushDistance: 28
   angryBonkDetectionRadius: 1.5
+  angryStuckExitSeconds: 0.8
   wallLayerMask:
     serializedVersion: 2
     m_Bits: 192
@@ -241,9 +244,9 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7354247526504522341}
-  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
---- !u!135 &5214136877758785148
-SphereCollider:
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!65 &6001455650701662765
+BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -261,7 +264,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 0.5
+  m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &8885879836015100402
 GameObject:
@@ -290,7 +293,7 @@ Transform:
   m_GameObject: {fileID: 8885879836015100402}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0.048, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:

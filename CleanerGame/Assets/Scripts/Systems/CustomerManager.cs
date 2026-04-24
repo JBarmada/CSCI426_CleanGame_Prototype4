@@ -81,12 +81,18 @@ public class CustomerManager : MonoBehaviour
 
     public Chair GetNearestAvailableChair(Vector3 position)
     {
+        return GetNearestAvailableChair(position, null);
+    }
+
+    public Chair GetNearestAvailableChair(Vector3 position, Chair excludedChair)
+    {
         Chair nearest = null;
         float minDistance = Mathf.Infinity;
 
         foreach (Chair chair in chairs)
         {
             if (chair == null) continue;
+            if (chair == excludedChair) continue;
             if (chair.IsOccupied || chair.IsReserved) continue;
 
             float distance = Vector3.Distance(position, chair.transform.position);
@@ -115,9 +121,14 @@ public class CustomerManager : MonoBehaviour
 
     public bool TryAssignChair(CustomerPartyAI partyCustomer)
     {
+        return TryAssignChair(partyCustomer, null);
+    }
+
+    public bool TryAssignChair(CustomerPartyAI partyCustomer, Chair excludedChair)
+    {
         if (partyCustomer == null) return false;
 
-        Chair chair = GetNearestAvailableChair(partyCustomer.transform.position);
+        Chair chair = GetNearestAvailableChair(partyCustomer.transform.position, excludedChair);
         if (chair == null) return false;
 
         if (!chair.TryReserve(partyCustomer)) return false;
@@ -200,6 +211,15 @@ public class CustomerManager : MonoBehaviour
                 partyCustomer.gameObject.SetActive(true);
                 partyCustomer.Initialize(this);
                 partyCustomer.SetCanTurnAngry(Random.value <= partyCustomerAngryChance);
+
+                if (!TryAssignChair(partyCustomer))
+                {
+                    if (logSpawnCaps)
+                        Debug.Log($"Spawn skip -> no available party chair. ChairsOpen={GetAvailableChairCount()}, SpawnPos={spawnPosition}", this);
+                    Destroy(partyCustomer.gameObject);
+                    return;
+                }
+
                 partyCustomers.Add(partyCustomer);
                 activeCustomerCount++;
                 return;

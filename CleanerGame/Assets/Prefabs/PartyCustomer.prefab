@@ -358,15 +358,18 @@ MonoBehaviour:
     playerPushWhilePushing: 0.35
     customerPushStrength: 0.75
     playerPushIntentThreshold: 0.25
-  shuffleSecondsRange: {x: 6, y: 8}
+  blockedSitDistance: 0.75
+  blockedSitSeconds: 0.35
+  shuffleSecondsRange: {x: 8, y: 8}
   disableCustomerComponent: 1
   emotions: {fileID: 0}
-  bonkMoveSpeedMultiplier: 2.4
+  angryRushMoveSpeedMultiplier: 2.4
   angryCheckRadius: 2.5
   angryRatePerSpill: 0.15
   angryDecayRate: 0.015
   angryRushDistance: 28
   angryBonkDetectionRadius: 1.5
+  angryStuckExitSeconds: 0.8
   angryTintColor: {r: 1, g: 0.35, b: 0.35, a: 1}
   wallLayerMask:
     serializedVersion: 2
@@ -393,19 +396,20 @@ MonoBehaviour:
     playerPushWhilePushing: 0.35
     customerPushStrength: 0.75
     playerPushIntentThreshold: 0.25
+  blockedSitDistance: 0.75
+  blockedSitSeconds: 0.35
   emotions: {fileID: 0}
-  customeremotions: {fileID: 0}
-  startAsBonkCustomer: 0
-  bonkMoveSpeedMultiplier: 0.9
-  bonkLifetimeSeconds: 18
-  bonkLeaveSpeedMultiplier: 1.25
-  bonkSpawnLift: 0.5
-  bonkColorTint: {r: 1, g: 0.35, b: 0.35, a: 1}
+  regularCustomerEmotions: {fileID: 0}
+  angryRushMoveSpeedMultiplier: 0.9
+  angryExitSpeedMultiplier: 1.25
+  angryColorTint: {r: 1, g: 0.35, b: 0.35, a: 1}
+  canTurnAngryChance: 0.418
   angryCheckRadius: 2.5
   angryRatePerSpill: 0.15
   angryDecayRate: 0.015
   angryRushDistance: 28
   angryBonkDetectionRadius: 1.5
+  angryStuckExitSeconds: 0.8
   wallLayerMask:
     serializedVersion: 2
     m_Bits: 0

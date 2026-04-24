@@ -154,6 +154,7 @@ MonoBehaviour:
   sweepsPerSecond: 2
   sweepsToClean: 2
   cleaningRadius: 1.15
+  slipVisualFootprintScale: 0.8
   coinsPerClean: 1
   coinWallet: {fileID: 0}
   spillTracker: {fileID: 0}

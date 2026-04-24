@@ -8,8 +8,14 @@ public class CustomerPartyAI : MonoBehaviour
     [SerializeField] private float arrivalDistance = 0.2f;
     [SerializeField] private CrowdContactSettings crowdContact = new CrowdContactSettings();
 
+    [Header("Seat Arrival Fail-safe")]
+    [Tooltip("If a party customer is blocked this close to their reserved chair, complete the sit instead of vibrating against the table.")]
+    [SerializeField] private float blockedSitDistance = 0.75f;
+    [Tooltip("Seconds with almost no movement near the reserved chair before forcing the sit.")]
+    [SerializeField] private float blockedSitSeconds = 0.35f;
+
     [Header("Shuffle Timing")]
-    [SerializeField] private Vector2 shuffleSecondsRange = new Vector2(3f, 8f);
+    [SerializeField] private Vector2 shuffleSecondsRange = new Vector2(8f, 8f);
 
     [Header("Setup")]
     [SerializeField] private bool disableCustomerComponent = true;
@@ -32,6 +38,8 @@ public class CustomerPartyAI : MonoBehaviour
     [SerializeField] private float angryRushDistance = 28f;
     [Tooltip("How close the customer must get to the player to count as a bonk and start leaving.")]
     [SerializeField] private float angryBonkDetectionRadius = 1.5f;
+    [Tooltip("If an angry party customer makes almost no progress for this long, they stop rushing and path toward the exit.")]
+    [SerializeField] private float angryStuckExitSeconds = 0.8f;
     [SerializeField] private Color angryTintColor = new Color(1f, 0.35f, 0.35f, 1f);
 
     [Header("Obstacle Collision")]
@@ -42,6 +50,10 @@ public class CustomerPartyAI : MonoBehaviour
     private Chair assignedChair;
     private Chair reservedChair;
     private float shuffleTimer;
+    private Vector3 lastWalkPosition;
+    private float blockedSitTimer;
+    private bool reachedSeatAisle;
+    private bool reachedSeatApproach;
     private Customer customerProxy;
     private SphereCollider crowdCollider;
     private Renderer[] cachedRenderers;
@@ -53,6 +65,8 @@ public class CustomerPartyAI : MonoBehaviour
     private float   angerCheckTimer;
     private int     cachedNearbySpills;
     private Vector3 angryRushTarget;
+    private Vector3 lastAngryPosition;
+    private float angryStuckTimer;
     private Transform exitPoint;
 
     // Post-rush: walking to door
@@ -121,7 +135,11 @@ public class CustomerPartyAI : MonoBehaviour
 
     private void Start()
     {
-        state = PartyState.PickingSeat;
+        if (manager == null)
+            manager = FindFirstObjectByType<CustomerManager>();
+
+        if (reservedChair == null && assignedChair == null)
+            state = PartyState.PickingSeat;
     }
 
     private void OnDisable()
@@ -167,8 +185,12 @@ public class CustomerPartyAI : MonoBehaviour
     public void AssignReservedChair(Chair chair)
     {
         if (chair == null) return;
+        if (reservedChair != null && reservedChair != chair)
+            ReleaseReservation(reservedChair);
 
         reservedChair = chair;
+        ResetBlockedSitTracking();
+        ResetSeatRoute();
         state = PartyState.WalkingToSeat;
     }
 
@@ -180,27 +202,96 @@ public class CustomerPartyAI : MonoBehaviour
             return;
         }
 
-        Vector3 target = reservedChair.GetSeatPosition();
+        Vector3 seatPosition = reservedChair.GetSeatPosition();
+        Vector3 target = GetSeatRouteTarget(reservedChair, seatPosition);
         MoveWithWallCheck(target, moveSpeed, isAngryCustomer: false);
 
-        if (Vector3.Distance(transform.position, target) <= arrivalDistance)
+        float distanceToSeat = GetPlanarDistance(transform.position, seatPosition);
+        if (distanceToSeat <= arrivalDistance || ShouldForceSit(distanceToSeat))
         {
-            if (reservedChair.TrySit(this))
-            {
-                assignedChair = reservedChair;
-                reservedChair = null;
-                shuffleTimer = Random.Range(shuffleSecondsRange.x, shuffleSecondsRange.y);
-                state = PartyState.Sitting;
-                if (emotions != null)
-                    emotions.BeginSitting();
-            }
-            else
-            {
-                ReleaseReservation(reservedChair);
-                reservedChair = null;
-                state = PartyState.PickingSeat;
-            }
+            CompleteSitAtReservedChair(seatPosition);
         }
+    }
+
+    private Vector3 GetSeatRouteTarget(Chair chair, Vector3 seatPosition)
+    {
+        if (!reachedSeatAisle)
+        {
+            Vector3 aislePosition = chair.GetAislePosition(transform.position);
+            if (GetPlanarDistance(transform.position, aislePosition) > arrivalDistance)
+                return aislePosition;
+
+            reachedSeatAisle = true;
+        }
+
+        if (!reachedSeatApproach)
+        {
+            Vector3 approachPosition = chair.GetApproachPosition();
+            if (GetPlanarDistance(transform.position, approachPosition) > arrivalDistance)
+                return approachPosition;
+
+            reachedSeatApproach = true;
+        }
+
+        return seatPosition;
+    }
+
+    private bool ShouldForceSit(float distanceToSeat)
+    {
+        if (distanceToSeat > blockedSitDistance)
+        {
+            ResetBlockedSitTracking();
+            return false;
+        }
+
+        float moved = GetPlanarDistance(transform.position, lastWalkPosition);
+        if (moved <= 0.025f)
+            blockedSitTimer += Time.deltaTime;
+        else
+            blockedSitTimer = 0f;
+
+        lastWalkPosition = transform.position;
+        return blockedSitTimer >= blockedSitSeconds;
+    }
+
+    private void CompleteSitAtReservedChair(Vector3 target)
+    {
+        if (reservedChair.TrySit(this))
+        {
+            Vector3 snappedPosition = transform.position;
+            snappedPosition.x = target.x;
+            snappedPosition.z = target.z;
+            transform.position = snappedPosition;
+
+            assignedChair = reservedChair;
+            reservedChair = null;
+            ResetSeatRoute();
+            shuffleTimer = Random.Range(shuffleSecondsRange.x, shuffleSecondsRange.y);
+            ResetBlockedSitTracking();
+            state = PartyState.Sitting;
+            if (emotions != null)
+                emotions.BeginSitting();
+        }
+        else
+        {
+            ReleaseReservation(reservedChair);
+            reservedChair = null;
+            ResetSeatRoute();
+            ResetBlockedSitTracking();
+            state = PartyState.PickingSeat;
+        }
+    }
+
+    private void ResetBlockedSitTracking()
+    {
+        lastWalkPosition = transform.position;
+        blockedSitTimer = 0f;
+    }
+
+    private void ResetSeatRoute()
+    {
+        reachedSeatAisle = false;
+        reachedSeatApproach = false;
     }
 
     private void UpdateSitting()
@@ -250,15 +341,23 @@ public class CustomerPartyAI : MonoBehaviour
 
         if (assignedChair != null)
         {
+            Chair previousChair = assignedChair;
+            if (manager == null || !manager.TryAssignChair(this, previousChair))
+            {
+                shuffleTimer = 1f;
+                return;
+            }
+
             bool didSpill = false;
-            if (manager != null)
-                didSpill = manager.OnCustomerLeftChair(assignedChair.transform.position);
+            didSpill = manager.OnCustomerLeftChair(previousChair.transform.position);
 
             if (didSpill && emotions != null)
                 emotions.BeginLeaving();
 
-            assignedChair.CustomerLeft();
+            previousChair.CustomerLeft();
             assignedChair = null;
+            ResetSeatRoute();
+            return;
         }
 
         state = PartyState.PickingSeat;
@@ -301,6 +400,8 @@ public class CustomerPartyAI : MonoBehaviour
 
         angryRushTarget   = transform.position + dir * angryRushDistance;
         angryRushTarget.y = transform.position.y;
+        lastAngryPosition = transform.position;
+        angryStuckTimer   = 0f;
 
         state = PartyState.AngryRush;
         SetTintGradient(1f);   // snap to full red
@@ -333,6 +434,7 @@ public class CustomerPartyAI : MonoBehaviour
     private void UpdateAngryRush()
     {
         MoveWithWallCheck(angryRushTarget, moveSpeed * angryRushMoveSpeedMultiplier, isAngryCustomer: true);
+        UpdateAngryStuckRecovery();
 
         // Check if we've reached the player — deliver the bonk manually here.
         // The crowd utility only fires ApplyBonk inside combinedRadius (~0.8 f), which
@@ -368,6 +470,25 @@ public class CustomerPartyAI : MonoBehaviour
             state = PartyState.LeavingAfterRush;
     }
 
+    private void UpdateAngryStuckRecovery()
+    {
+        Vector3 currentPlanar = new Vector3(transform.position.x, 0f, transform.position.z);
+        Vector3 lastPlanar = new Vector3(lastAngryPosition.x, 0f, lastAngryPosition.z);
+
+        if (Vector3.Distance(currentPlanar, lastPlanar) <= 0.03f)
+            angryStuckTimer += Time.deltaTime;
+        else
+            angryStuckTimer = 0f;
+
+        lastAngryPosition = transform.position;
+
+        if (angryStuckTimer < angryStuckExitSeconds)
+            return;
+
+        state = PartyState.LeavingAfterRush;
+        angryStuckTimer = 0f;
+    }
+
     // ── State: LeavingAfterRush ───────────────────────────────────────────────
 
     private void UpdateLeavingAfterRush()
@@ -399,53 +520,19 @@ public class CustomerPartyAI : MonoBehaviour
         Vector3 prevPos = transform.position;
         CustomerCrowdUtility.MoveTowardsWithCrowdContact(
             transform, crowdCollider, target, speed, crowdContact, isAngryCustomer);
-        ApplyWallCorrection(prevPos);
+        ApplyWallCorrection(prevPos, target);
     }
 
-    private void ApplyWallCorrection(Vector3 prevPos)
+    private static float GetPlanarDistance(Vector3 a, Vector3 b)
     {
-        if (wallLayerMask.value == 0) return;
+        a.y = 0f;
+        b.y = 0f;
+        return Vector3.Distance(a, b);
+    }
 
-        Vector3 newPos   = transform.position;
-        Vector3 movement = newPos - prevPos;
-        float   moveDist = movement.magnitude;
-        if (moveDist < 0.001f) return;
-
-        float   radius = crowdCollider != null ? crowdCollider.radius * 0.85f : 0.4f;
-        Vector3 bottom = prevPos + Vector3.up * 0.1f;
-        Vector3 top    = prevPos + Vector3.up * 1.5f;
-
-        if (!Physics.CapsuleCast(bottom, top, radius, movement.normalized,
-                out RaycastHit hit, moveDist, wallLayerMask, QueryTriggerInteraction.Ignore))
-            return;
-
-        // Move to just before the wall
-        float   safeDistance = Mathf.Max(0f, hit.distance - 0.05f);
-        Vector3 safePos      = prevPos + movement.normalized * safeDistance;
-
-        // Slide the remaining movement along the wall face (XZ plane)
-        float remaining = moveDist - safeDistance;
-        if (remaining > 0.001f)
-        {
-            Vector3 wallNormal = new Vector3(hit.normal.x, 0f, hit.normal.z).normalized;
-            Vector3 slideDir   = Vector3.ProjectOnPlane(movement.normalized, wallNormal);
-            if (slideDir.sqrMagnitude > 0.001f)
-            {
-                slideDir.Normalize();
-                // Second cast along the slide to prevent corner-locking
-                Vector3 sb = safePos + Vector3.up * 0.1f;
-                Vector3 st = safePos + Vector3.up * 1.5f;
-                if (!Physics.CapsuleCast(sb, st, radius, slideDir,
-                        remaining, wallLayerMask, QueryTriggerInteraction.Ignore))
-                {
-                    transform.position = safePos + slideDir * remaining;
-                    return;
-                }
-            }
-        }
-
-        // Could not slide (corner) — just park at the wall
-        transform.position = safePos;
+    private void ApplyWallCorrection(Vector3 prevPos, Vector3 target)
+    {
+        CustomerCrowdUtility.ApplyObstacleCorrection(transform, crowdCollider, prevPos, target, wallLayerMask);
     }
 
     private void ReleaseReservation(Chair chair)
@@ -460,6 +547,7 @@ public class CustomerPartyAI : MonoBehaviour
         {
             ReleaseReservation(reservedChair);
             reservedChair = null;
+            ResetSeatRoute();
         }
 
         if (assignedChair != null)

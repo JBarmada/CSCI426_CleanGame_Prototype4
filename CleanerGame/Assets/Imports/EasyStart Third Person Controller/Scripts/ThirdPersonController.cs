@@ -30,6 +30,7 @@ public class ThirdPersonController : MonoBehaviour
     public bool disableSprintWhileSweeping = true;
 
     [Header("Slip")]
+    [HideInInspector]
     public float spillCheckRadius = 0.65f;
     public float slipLaunchSpeed = 6f;
     public float slipDuration = 0.55f;
@@ -489,11 +490,11 @@ public class ThirdPersonController : MonoBehaviour
             return;
 
         Vector3 checkPosition = transform.position + Vector3.down * 0.45f;
-        Collider[] hits = Physics.OverlapSphere(checkPosition, spillCheckRadius, ~0, QueryTriggerInteraction.Collide);
-        for (int i = 0; i < hits.Length; i++)
+        var spills = SpillManager.ActiveSpills;
+        for (int i = 0; i < spills.Count; i++)
         {
-            Collider hit = hits[i];
-            if (hit == null || !hit.CompareTag("Spill"))
+            SpillManager spill = spills[i];
+            if (spill == null || !spill.ContainsSlipPoint(checkPosition))
                 continue;
 
             slipTimer = Mathf.Max(0.1f, slipDuration);

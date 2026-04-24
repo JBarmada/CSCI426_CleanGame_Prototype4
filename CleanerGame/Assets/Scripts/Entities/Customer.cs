@@ -7,6 +7,13 @@ public class Customer : MonoBehaviour
     [SerializeField] private float sitDurationSeconds = 8f;
     [SerializeField] private float arrivalDistance = 0.2f;
     [SerializeField] private CrowdContactSettings crowdContact = new CrowdContactSettings();
+
+    [Header("Seat Arrival Fail-safe")]
+    [Tooltip("If a customer is blocked this close to their reserved chair, complete the sit instead of vibrating against the table.")]
+    [SerializeField] private float blockedSitDistance = 0.75f;
+    [Tooltip("Seconds with almost no movement near the reserved chair before forcing the sit.")]
+    [SerializeField] private float blockedSitSeconds = 0.35f;
+
     [SerializeField] private PartyCustomerEmotions emotions;
     [FormerlySerializedAs("customeremotions")]
     [SerializeField] private RegularCustomerEmotions regularCustomerEmotions;
@@ -36,6 +43,8 @@ public class Customer : MonoBehaviour
     [SerializeField] private float angryRushDistance = 28f;
     [Tooltip("Distance within which the customer counts as having bonked the player and starts leaving.")]
     [SerializeField] private float angryBonkDetectionRadius = 1.5f;
+    [Tooltip("If an angry customer makes almost no progress for this long, they stop rushing and path toward the exit.")]
+    [SerializeField] private float angryStuckExitSeconds = 0.8f;
 
     [Header("Obstacle Collision")]
     [Tooltip("Layer(s) your wall/table/chair colliders live on. Customers will slide along these instead of passing through.")]
@@ -47,6 +56,10 @@ public class Customer : MonoBehaviour
     private Chair           assignedChair;
     private Transform       exitPoint;
     private float           sitTimer;
+    private Vector3         lastWalkPosition;
+    private float           blockedSitTimer;
+    private bool            reachedSeatAisle;
+    private bool            reachedSeatApproach;
     private SphereCollider  crowdCollider;
     private bool            isAngryCustomer;   // true once the angry rush starts
     private bool            angryLeaving;      // true after rush — uses leave-speed to exit
@@ -60,6 +73,8 @@ public class Customer : MonoBehaviour
     private float   angerCheckTimer;
     private int     cachedNearbySpills;
     private Vector3 angryRushTarget;
+    private Vector3 lastAngryPosition;
+    private float angryStuckTimer;
 
     private enum CustomerState { WalkingToSeat, Sitting, Leaving, AngryRush }
     private CustomerState state;
@@ -116,6 +131,8 @@ public class Customer : MonoBehaviour
 
         assignedChair = chair;
         exitPoint     = exit;
+        ResetBlockedSitTracking();
+        ResetSeatRoute();
         state         = CustomerState.WalkingToSeat;
     }
 
@@ -142,22 +159,80 @@ public class Customer : MonoBehaviour
             return;
         }
 
-        MoveTowards(assignedChair.GetSeatPosition());
+        Vector3 seatPosition = assignedChair.GetSeatPosition();
+        Vector3 target = GetSeatRouteTarget(assignedChair, seatPosition);
+        MoveTowards(target);
 
-        if (Vector3.Distance(transform.position, assignedChair.GetSeatPosition()) <= arrivalDistance)
+        float distanceToSeat = GetPlanarDistance(transform.position, seatPosition);
+        if (distanceToSeat <= arrivalDistance || ShouldForceSit(distanceToSeat))
         {
-            if (assignedChair.TrySit(this))
-            {
-                sitTimer = sitDurationSeconds;
-                state    = CustomerState.Sitting;
-                if (emotions != null) emotions.BeginSitting();
-            }
-            else
-            {
-                assignedChair.ReleaseReservation(this);
-                assignedChair = null;
-                if (manager != null) manager.TryAssignChair(this);
-            }
+            CompleteSitAtAssignedChair(seatPosition);
+        }
+    }
+
+    private Vector3 GetSeatRouteTarget(Chair chair, Vector3 seatPosition)
+    {
+        if (!reachedSeatAisle)
+        {
+            Vector3 aislePosition = chair.GetAislePosition(transform.position);
+            if (GetPlanarDistance(transform.position, aislePosition) > arrivalDistance)
+                return aislePosition;
+
+            reachedSeatAisle = true;
+        }
+
+        if (!reachedSeatApproach)
+        {
+            Vector3 approachPosition = chair.GetApproachPosition();
+            if (GetPlanarDistance(transform.position, approachPosition) > arrivalDistance)
+                return approachPosition;
+
+            reachedSeatApproach = true;
+        }
+
+        return seatPosition;
+    }
+
+    private bool ShouldForceSit(float distanceToSeat)
+    {
+        if (distanceToSeat > blockedSitDistance)
+        {
+            ResetBlockedSitTracking();
+            return false;
+        }
+
+        float moved = GetPlanarDistance(transform.position, lastWalkPosition);
+        if (moved <= 0.025f)
+            blockedSitTimer += Time.deltaTime;
+        else
+            blockedSitTimer = 0f;
+
+        lastWalkPosition = transform.position;
+        return blockedSitTimer >= blockedSitSeconds;
+    }
+
+    private void CompleteSitAtAssignedChair(Vector3 seatPosition)
+    {
+        if (assignedChair.TrySit(this))
+        {
+            Vector3 snappedPosition = transform.position;
+            snappedPosition.x = seatPosition.x;
+            snappedPosition.z = seatPosition.z;
+            transform.position = snappedPosition;
+
+            sitTimer = sitDurationSeconds;
+            ResetSeatRoute();
+            ResetBlockedSitTracking();
+            state = CustomerState.Sitting;
+            if (emotions != null) emotions.BeginSitting();
+        }
+        else
+        {
+            assignedChair.ReleaseReservation(this);
+            assignedChair = null;
+            ResetSeatRoute();
+            ResetBlockedSitTracking();
+            if (manager != null) manager.TryAssignChair(this);
         }
     }
 
@@ -222,6 +297,7 @@ public class Customer : MonoBehaviour
     private void UpdateAngryRush()
     {
         MoveTowards(angryRushTarget);
+        UpdateAngryStuckRecovery();
 
         if (ThirdPersonController.Instance != null)
         {
@@ -320,9 +396,31 @@ public class Customer : MonoBehaviour
 
         angryRushTarget   = transform.position + dir * angryRushDistance;
         angryRushTarget.y = transform.position.y;
+        lastAngryPosition = transform.position;
+        angryStuckTimer   = 0f;
 
         state = CustomerState.AngryRush;
         SetAngryVisuals(true);   // snap to full red
+    }
+
+    private void UpdateAngryStuckRecovery()
+    {
+        Vector3 currentPlanar = new Vector3(transform.position.x, 0f, transform.position.z);
+        Vector3 lastPlanar = new Vector3(lastAngryPosition.x, 0f, lastAngryPosition.z);
+
+        if (Vector3.Distance(currentPlanar, lastPlanar) <= 0.03f)
+            angryStuckTimer += Time.deltaTime;
+        else
+            angryStuckTimer = 0f;
+
+        lastAngryPosition = transform.position;
+
+        if (angryStuckTimer < angryStuckExitSeconds)
+            return;
+
+        angryLeaving = true;
+        state = CustomerState.Leaving;
+        angryStuckTimer = 0f;
     }
 
     // ── Visuals ───────────────────────────────────────────────────────────────
@@ -390,51 +488,31 @@ public class Customer : MonoBehaviour
         Vector3 prevPos = transform.position;
         CustomerCrowdUtility.MoveTowardsWithCrowdContact(
             transform, crowdCollider, adjustedTarget, speed, crowdContact, isAngryCustomer);
-        ApplyWallCorrection(prevPos);
+        ApplyWallCorrection(prevPos, adjustedTarget);
     }
 
-    private void ApplyWallCorrection(Vector3 prevPos)
+    private static float GetPlanarDistance(Vector3 a, Vector3 b)
     {
-        if (wallLayerMask.value == 0) return;
+        a.y = 0f;
+        b.y = 0f;
+        return Vector3.Distance(a, b);
+    }
 
-        Vector3 newPos   = transform.position;
-        Vector3 movement = newPos - prevPos;
-        float   moveDist = movement.magnitude;
-        if (moveDist < 0.001f) return;
+    private void ResetBlockedSitTracking()
+    {
+        lastWalkPosition = transform.position;
+        blockedSitTimer = 0f;
+    }
 
-        float   radius = crowdCollider != null ? crowdCollider.radius * 0.85f : 0.4f;
-        Vector3 bottom = prevPos + Vector3.up * 0.1f;
-        Vector3 top    = prevPos + Vector3.up * 1.5f;
+    private void ResetSeatRoute()
+    {
+        reachedSeatAisle = false;
+        reachedSeatApproach = false;
+    }
 
-        if (!Physics.CapsuleCast(bottom, top, radius, movement.normalized,
-                out RaycastHit hit, moveDist, wallLayerMask, QueryTriggerInteraction.Ignore))
-            return;
-
-        float   safeDistance = Mathf.Max(0f, hit.distance - 0.05f);
-        Vector3 safePos      = prevPos + movement.normalized * safeDistance;
-
-        // Slide remaining movement along the wall surface (XZ plane only)
-        float remaining = moveDist - safeDistance;
-        if (remaining > 0.001f)
-        {
-            Vector3 wallNormal = new Vector3(hit.normal.x, 0f, hit.normal.z).normalized;
-            Vector3 slideDir   = Vector3.ProjectOnPlane(movement.normalized, wallNormal);
-            if (slideDir.sqrMagnitude > 0.001f)
-            {
-                slideDir.Normalize();
-                Vector3 sb = safePos + Vector3.up * 0.1f;
-                Vector3 st = safePos + Vector3.up * 1.5f;
-                if (!Physics.CapsuleCast(sb, st, radius, slideDir,
-                        remaining, wallLayerMask, QueryTriggerInteraction.Ignore))
-                {
-                    transform.position = safePos + slideDir * remaining;
-                    return;
-                }
-            }
-        }
-
-        // Cornered — park at the wall
-        transform.position = safePos;
+    private void ApplyWallCorrection(Vector3 prevPos, Vector3 target)
+    {
+        CustomerCrowdUtility.ApplyObstacleCorrection(transform, crowdCollider, prevPos, target, wallLayerMask);
     }
 }
 
@@ -453,6 +531,9 @@ public class CrowdContactSettings
 
 public static class CustomerCrowdUtility
 {
+    private const float ObstacleSkin = 0.05f;
+    private const float MinSideStepDistance = 0.12f;
+
     public static void MoveTowardsWithCrowdContact(
         Transform customerTransform,
         SphereCollider customerCollider,
@@ -549,5 +630,92 @@ public static class CustomerCrowdUtility
         return (player != null && player.HasMovementInput)
             ? player.DesiredPlanarMoveDirection
             : Vector3.forward;
+    }
+
+    public static void ApplyObstacleCorrection(
+        Transform customerTransform,
+        SphereCollider customerCollider,
+        Vector3 prevPos,
+        Vector3 target,
+        LayerMask wallLayerMask)
+    {
+        if (customerTransform == null || wallLayerMask.value == 0) return;
+
+        Vector3 newPos = customerTransform.position;
+        Vector3 movement = newPos - prevPos;
+        float moveDist = movement.magnitude;
+        if (moveDist < 0.001f) return;
+
+        float radius = customerCollider != null ? customerCollider.radius * 0.85f : 0.4f;
+        Vector3 bottom = prevPos + Vector3.up * 0.1f;
+        Vector3 top = prevPos + Vector3.up * 1.5f;
+
+        if (!Physics.CapsuleCast(bottom, top, radius, movement.normalized,
+                out RaycastHit hit, moveDist, wallLayerMask, QueryTriggerInteraction.Ignore))
+            return;
+
+        float safeDistance = Mathf.Max(0f, hit.distance - ObstacleSkin);
+        Vector3 safePos = prevPos + movement.normalized * safeDistance;
+        float remaining = Mathf.Max(MinSideStepDistance, moveDist - safeDistance);
+
+        if (TrySetCorrectedPosition(customerTransform, customerCollider, safePos, GetSlideDirection(movement, hit.normal), remaining, wallLayerMask))
+            return;
+
+        Vector3 wallNormal = new Vector3(hit.normal.x, 0f, hit.normal.z).normalized;
+        Vector3 targetDirection = target - safePos;
+        targetDirection.y = 0f;
+        if (targetDirection.sqrMagnitude < 0.001f)
+            targetDirection = movement;
+        targetDirection.y = 0f;
+        targetDirection.Normalize();
+
+        Vector3 tangentA = new Vector3(-wallNormal.z, 0f, wallNormal.x);
+        Vector3 tangentB = -tangentA;
+        Vector3 firstTangent = Vector3.Dot(tangentA, targetDirection) >= Vector3.Dot(tangentB, targetDirection)
+            ? tangentA
+            : tangentB;
+
+        if (TrySetCorrectedPosition(customerTransform, customerCollider, safePos, firstTangent, remaining, wallLayerMask))
+            return;
+
+        if (TrySetCorrectedPosition(customerTransform, customerCollider, safePos, -firstTangent, remaining, wallLayerMask))
+            return;
+
+        customerTransform.position = safePos;
+    }
+
+    private static Vector3 GetSlideDirection(Vector3 movement, Vector3 hitNormal)
+    {
+        Vector3 wallNormal = new Vector3(hitNormal.x, 0f, hitNormal.z).normalized;
+        if (wallNormal.sqrMagnitude < 0.001f)
+            return Vector3.zero;
+
+        Vector3 slideDir = Vector3.ProjectOnPlane(movement.normalized, wallNormal);
+        slideDir.y = 0f;
+        return slideDir.sqrMagnitude > 0.001f ? slideDir.normalized : Vector3.zero;
+    }
+
+    private static bool TrySetCorrectedPosition(
+        Transform customerTransform,
+        SphereCollider customerCollider,
+        Vector3 origin,
+        Vector3 direction,
+        float distance,
+        LayerMask wallLayerMask)
+    {
+        if (direction.sqrMagnitude < 0.001f || distance <= 0f)
+            return false;
+
+        direction.Normalize();
+        float radius = customerCollider != null ? customerCollider.radius * 0.85f : 0.4f;
+        Vector3 bottom = origin + Vector3.up * 0.1f;
+        Vector3 top = origin + Vector3.up * 1.5f;
+
+        if (Physics.CapsuleCast(bottom, top, radius, direction,
+                distance, wallLayerMask, QueryTriggerInteraction.Ignore))
+            return false;
+
+        customerTransform.position = origin + direction * distance;
+        return true;
     }
 }
