@@ -178,7 +178,7 @@ MonoBehaviour:
   angryRushMoveSpeedMultiplier: 2.34
   angryExitSpeedMultiplier: 1.25
   angryColorTint: {r: 1, g: 0.35, b: 0.35, a: 1}
-  canTurnAngryChance: 0.578
+  canTurnAngryChance: 0.91
   angryCheckRadius: 2.5
   angryRatePerSpill: 0.45
   angryDecayRate: 0.1

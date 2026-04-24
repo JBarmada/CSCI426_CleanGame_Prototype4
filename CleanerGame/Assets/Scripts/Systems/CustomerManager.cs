@@ -137,6 +137,55 @@ public class CustomerManager : MonoBehaviour
         return true;
     }
 
+    public bool TryStartPartySeatSwap(CustomerPartyAI partyCustomer, Chair currentChair)
+    {
+        if (partyCustomer == null || currentChair == null) return false;
+
+        Chair targetChair = GetNearestOccupiedPartyChair(partyCustomer.transform.position, currentChair);
+        if (targetChair == null) return false;
+
+        CustomerPartyAI otherPartyCustomer = targetChair.CurrentOccupant as CustomerPartyAI;
+        if (otherPartyCustomer == null || !otherPartyCustomer.CanStartSeatSwap())
+            return false;
+
+        if (!targetChair.TryReserveForShuffle(partyCustomer))
+            return false;
+
+        if (!currentChair.TryReserveForShuffle(otherPartyCustomer))
+        {
+            targetChair.ReleaseReservation(partyCustomer);
+            return false;
+        }
+
+        partyCustomer.BeginSeatShuffle(targetChair);
+        otherPartyCustomer.BeginSeatShuffle(currentChair);
+        return true;
+    }
+
+    private Chair GetNearestOccupiedPartyChair(Vector3 position, Chair excludedChair)
+    {
+        Chair nearest = null;
+        float minDistance = Mathf.Infinity;
+
+        foreach (Chair chair in chairs)
+        {
+            if (chair == null) continue;
+            if (chair == excludedChair) continue;
+            if (!chair.IsOccupied || chair.IsReserved) continue;
+            if (!(chair.CurrentOccupant is CustomerPartyAI partyCustomer)) continue;
+            if (!partyCustomer.CanStartSeatSwap()) continue;
+
+            float distance = Vector3.Distance(position, chair.transform.position);
+            if (distance < minDistance)
+            {
+                minDistance = distance;
+                nearest = chair;
+            }
+        }
+
+        return nearest;
+    }
+
     public void DespawnCustomer(Customer customer)
     {
         activeCustomers.Remove(customer);

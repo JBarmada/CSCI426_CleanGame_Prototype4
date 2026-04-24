@@ -63,6 +63,15 @@ public class ThirdPersonController : MonoBehaviour
     public float bonkLaunchSpeed = 9f;
     public float bonkMomentumDecay = 1.35f;
     public float bonkSpinSpeed = 720f;
+    [Tooltip("Minimum visual spin completed after a real angry-customer bonk. 360 = one full backward roll.")]
+    public float bonkMinimumRollDegrees = 1080f;
+    [Tooltip("How long the visible bonk roll lasts. This does not change the knockback distance.")]
+    public float bonkVisualRollDuration = 0.375f;
+    [Tooltip("How far into the roll animation the bonk starts visually. Higher values make the tumble read immediately.")]
+    [Range(0f, 0.45f)]
+    public float bonkVisualRollLead = 0.18f;
+    [Tooltip("How much faster the visible roll finishes when the player is trying to move.")]
+    public float bonkMoveInputRollSpeedMultiplier = 1.8f;
 
     // Player states
     bool isSprinting = false;
@@ -118,6 +127,10 @@ public class ThirdPersonController : MonoBehaviour
     float bonkTimer = 0f;
     float bonkRoll = 0f;
     float bonkPitch = 0f;
+    float bonkVisualRollTimer = 0f;
+    float bonkVisualRollDurationActive = 0f;
+    float bonkVisualRollDegrees = 0f;
+    float bonkVisualRollDirection = 1f;
     float bonkImpactCooldown = 0f;
     bool bonkCrashPlayed = false;
     Vector3 lastCameraShakeOffset = Vector3.zero;
@@ -434,11 +447,24 @@ public class ThirdPersonController : MonoBehaviour
         bonkVelocity = planarDirection * Mathf.Max(4f, bonkLaunchSpeed * Mathf.Max(0.75f, strength));
         bonkTimer = Mathf.Max(0.15f, bonkKnockbackDuration);
         bonkRoll = Mathf.Sign(Vector3.Dot(planarDirection, transform.right)) * bonkTumbleAngle;
-        bonkPitch = bonkTumblePitch;
+        bonkPitch = 0f;
+        StartBonkVisualRoll(planarDirection);
         bonkCrashPlayed = false;
         pendingExternalDisplacement += planarDirection * 0.45f;
         TriggerCameraShake(bonkShakeDuration, bonkShakeMagnitude);
         PlayImpactClip(bonkClip, bonkVolume);
+    }
+
+    void StartBonkVisualRoll(Vector3 planarDirection)
+    {
+        bonkVisualRollDurationActive = Mathf.Max(0.1f, bonkVisualRollDuration);
+        bonkVisualRollTimer = bonkVisualRollDurationActive;
+
+        float speedBasedDegrees = Mathf.Max(0f, bonkSpinSpeed) * bonkVisualRollDurationActive;
+        bonkVisualRollDegrees = Mathf.Max(Mathf.Abs(bonkMinimumRollDegrees), speedBasedDegrees);
+
+        float forwardDot = Vector3.Dot(planarDirection.normalized, transform.forward);
+        bonkVisualRollDirection = forwardDot >= 0f ? 1f : -1f;
     }
 
     void UpdateSlipAndBonkTimers()
@@ -465,13 +491,20 @@ public class ThirdPersonController : MonoBehaviour
                 bonkVelocity = Vector3.zero;
         }
 
-        if (bonkTimer > 0f && bonkVelocity.sqrMagnitude > 0.01f)
+        if (bonkVisualRollTimer > 0f)
         {
-            float spinDirection = Mathf.Sign(Vector3.Dot(bonkVelocity.normalized, transform.right));
-            if (Mathf.Abs(spinDirection) < 0.1f)
-                spinDirection = 1f;
-
-            bonkRoll += spinDirection * bonkSpinSpeed * Time.deltaTime;
+            float inputSpeedup = HasMovementInput ? Mathf.Max(1f, bonkMoveInputRollSpeedMultiplier) : 1f;
+            bonkVisualRollTimer -= Time.deltaTime * inputSpeedup;
+            float elapsedT = 1f - Mathf.Clamp01(bonkVisualRollTimer / Mathf.Max(0.001f, bonkVisualRollDurationActive));
+            float lead = Mathf.Clamp(bonkVisualRollLead, 0f, 0.45f);
+            float rollT = Mathf.Clamp01(lead + elapsedT * (1f - lead));
+            float spinPitch = bonkVisualRollDirection * bonkVisualRollDegrees * rollT;
+            float impactPitch = bonkVisualRollDirection * Mathf.Sin(rollT * Mathf.PI) * bonkTumblePitch;
+            bonkPitch = spinPitch + impactPitch;
+            bonkRoll = Mathf.Lerp(bonkRoll, 0f, Time.deltaTime * bonkTumbleSpeed);
+        }
+        else if (bonkTimer > 0f && bonkVelocity.sqrMagnitude > 0.01f)
+        {
             bonkPitch = Mathf.Lerp(bonkPitch, bonkTumblePitch, Time.deltaTime * bonkTumbleSpeed);
         }
         else
@@ -574,6 +607,7 @@ public class ThirdPersonController : MonoBehaviour
         bonkCrashPlayed = true;
         bonkVelocity = Vector3.zero;
         bonkTimer = 0f;
+        bonkVisualRollTimer = 0f;
         bonkRoll *= 0.35f;
         bonkPitch *= 0.35f;
         TriggerCameraShake(bonkImpactShakeDuration, bonkImpactShakeMagnitude);

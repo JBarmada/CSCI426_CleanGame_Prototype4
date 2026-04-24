@@ -86,6 +86,14 @@ public class CustomerPartyAI : MonoBehaviour
     public bool IsAngryCustomer =>
         state == PartyState.AngryRush || state == PartyState.LeavingAfterRush;
 
+    public bool CanStartSeatSwap()
+    {
+        return state == PartyState.Sitting
+            && assignedChair != null
+            && reservedChair == null
+            && !IsAngryCustomer;
+    }
+
     public void Initialize(CustomerManager owner)
     {
         manager = owner;
@@ -192,6 +200,25 @@ public class CustomerPartyAI : MonoBehaviour
         ResetBlockedSitTracking();
         ResetSeatRoute();
         state = PartyState.WalkingToSeat;
+    }
+
+    public void BeginSeatShuffle(Chair destinationChair)
+    {
+        if (!CanStartSeatSwap() || destinationChair == null)
+            return;
+
+        Chair previousChair = assignedChair;
+        reservedChair = destinationChair;
+        assignedChair = null;
+        ResetBlockedSitTracking();
+        ResetSeatRoute();
+        state = PartyState.WalkingToSeat;
+
+        bool didSpill = manager != null && manager.OnCustomerLeftChair(previousChair.transform.position);
+        if (didSpill && emotions != null)
+            emotions.BeginLeaving();
+
+        previousChair.CustomerLeft();
     }
 
     private void WalkToSeat()
@@ -344,7 +371,8 @@ public class CustomerPartyAI : MonoBehaviour
             Chair previousChair = assignedChair;
             if (manager == null || !manager.TryAssignChair(this, previousChair))
             {
-                shuffleTimer = 1f;
+                if (manager == null || !manager.TryStartPartySeatSwap(this, previousChair))
+                    shuffleTimer = 1f;
                 return;
             }
 

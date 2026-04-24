@@ -132,7 +132,7 @@ MonoBehaviour:
   sweepsPerSecond: 3
   sweepsToClean: 3
   cleaningRadius: 1.5
-  slipVisualFootprintScale: 0.8
+  slipVisualFootprintScale: 0.85
   coinsPerClean: 1
   coinWallet: {fileID: 0}
   spillTracker: {fileID: 0}

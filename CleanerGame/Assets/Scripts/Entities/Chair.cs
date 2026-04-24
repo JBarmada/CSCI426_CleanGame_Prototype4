@@ -8,6 +8,7 @@ public class Chair : MonoBehaviour
 
     public bool IsOccupied { get; private set; }
     public bool IsReserved { get; private set; }
+    public Object CurrentOccupant => currentOccupant;
     private Object currentOccupant;
     private Object reservedOccupant;
 
@@ -72,6 +73,16 @@ public class Chair : MonoBehaviour
     {
         if (occupant == null) return false;
         if (IsOccupied || IsReserved) return false;
+
+        IsReserved = true;
+        reservedOccupant = occupant;
+        return true;
+    }
+
+    public bool TryReserveForShuffle(Object occupant)
+    {
+        if (occupant == null) return false;
+        if (IsReserved) return false;
 
         IsReserved = true;
         reservedOccupant = occupant;

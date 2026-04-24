@@ -357,10 +357,10 @@ MonoBehaviour:
     playerPushStrength: 1.2
     playerPushWhilePushing: 0.35
     customerPushStrength: 0.75
-    playerPushIntentThreshold: 0.25
+    playerPushIntentThreshold: 0.445
   blockedSitDistance: 0.75
   blockedSitSeconds: 0.35
-  shuffleSecondsRange: {x: 8, y: 8}
+  shuffleSecondsRange: {x: 5, y: 5}
   disableCustomerComponent: 1
   emotions: {fileID: 0}
   angryRushMoveSpeedMultiplier: 2.4
@@ -403,7 +403,7 @@ MonoBehaviour:
   angryRushMoveSpeedMultiplier: 0.9
   angryExitSpeedMultiplier: 1.25
   angryColorTint: {r: 1, g: 0.35, b: 0.35, a: 1}
-  canTurnAngryChance: 0.418
+  canTurnAngryChance: 0.58
   angryCheckRadius: 2.5
   angryRatePerSpill: 0.15
   angryDecayRate: 0.015
