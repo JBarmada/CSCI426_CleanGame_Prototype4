@@ -1,6 +1,7 @@
 using System.Collections;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class DayEndSummaryUI : MonoBehaviour
@@ -27,6 +28,7 @@ public class DayEndSummaryUI : MonoBehaviour
     [SerializeField] private GameObject firedScreen;       // assign Fired Panel (inactive by default)
     [SerializeField] private CanvasGroup promotionCanvasGroup;
     [SerializeField] private CanvasGroup firedCanvasGroup;
+    [SerializeField] private Button firedRetryButton;
     [SerializeField] private GameObject promotionResultImage;
     [SerializeField] private GameObject firedResultImage;
     [SerializeField] private float resultImageRevealDelaySeconds = 3f;
@@ -89,6 +91,9 @@ public class DayEndSummaryUI : MonoBehaviour
     [Header("Layering")]
     [SerializeField] private int sortingOrder = 200;
 
+    [Header("Flow")]
+    [SerializeField] private GameFlowManager gameFlow;
+
     private Coroutine starRoutine;
     private Coroutine promotionStarPopRoutine;
     private Coroutine promotionDecisionRoutine;
@@ -139,8 +144,16 @@ public class DayEndSummaryUI : MonoBehaviour
         if (coinWallet == null)
             coinWallet = CoinWallet.Instance != null ? CoinWallet.Instance : FindFirstObjectByType<CoinWallet>();
 
+        if (gameFlow == null)
+            gameFlow = GameFlowManager.Instance;
+
         if (continueButton != null)
             continueButton.onClick.AddListener(OnContinuePressed);
+
+        if (firedRetryButton == null)
+            firedRetryButton = TryFindRetryButton(firedScreen);
+        if (firedRetryButton != null)
+            firedRetryButton.onClick.AddListener(OnFiredRetryPressed);
 
 
         EnsureEndScreenAudioSource();
@@ -1004,6 +1017,45 @@ public class DayEndSummaryUI : MonoBehaviour
         }
 
         reputationStar.gameObject.SetActive(legacyReputationStarVisibleState);
+    }
+
+    public void OnFiredRetryPressed()
+    {
+        if (gameFlow == null)
+            gameFlow = GameFlowManager.Instance;
+
+        if (gameFlow != null)
+        {
+            gameFlow.RestartGame();
+            return;
+        }
+
+        TutorialMode.End();
+        CoinWallet.Instance?.ResetForNewGame();
+        Time.timeScale = 1f;
+
+        Scene active = SceneManager.GetActiveScene();
+        SceneManager.LoadScene(active.buildIndex);
+    }
+
+    private Button TryFindRetryButton(GameObject panelRoot)
+    {
+        if (panelRoot == null)
+            return null;
+
+        Button[] buttons = panelRoot.GetComponentsInChildren<Button>(true);
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            Button candidate = buttons[i];
+            if (candidate == null)
+                continue;
+
+            string n = candidate.name.ToLowerInvariant();
+            if (n.Contains("retry") || n.Contains("restart") || n.Contains("newgame") || n.Contains("new_game"))
+                return candidate;
+        }
+
+        return null;
     }
 
     public bool HasGameStarted()
