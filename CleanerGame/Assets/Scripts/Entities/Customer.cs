@@ -164,7 +164,7 @@ public class Customer : MonoBehaviour
         MoveTowards(target);
 
         float distanceToSeat = GetPlanarDistance(transform.position, seatPosition);
-        if (distanceToSeat <= arrivalDistance || ShouldForceSit(distanceToSeat))
+        if (distanceToSeat <= arrivalDistance || ShouldForceSit(assignedChair, distanceToSeat))
         {
             CompleteSitAtAssignedChair(seatPosition);
         }
@@ -193,9 +193,9 @@ public class Customer : MonoBehaviour
         return seatPosition;
     }
 
-    private bool ShouldForceSit(float distanceToSeat)
+    private bool ShouldForceSit(Chair chair, float distanceToSeat)
     {
-        if (distanceToSeat > blockedSitDistance)
+        if (!IsInSeatSnapZone(chair, distanceToSeat))
         {
             ResetBlockedSitTracking();
             return false;
@@ -209,6 +209,18 @@ public class Customer : MonoBehaviour
 
         lastWalkPosition = transform.position;
         return blockedSitTimer >= blockedSitSeconds;
+    }
+
+    private bool IsInSeatSnapZone(Chair chair, float distanceToSeat)
+    {
+        if (distanceToSeat <= blockedSitDistance)
+            return true;
+
+        if (!reachedSeatApproach || chair == null)
+            return false;
+
+        float distanceToApproach = GetPlanarDistance(transform.position, chair.GetApproachPosition());
+        return distanceToApproach <= blockedSitDistance;
     }
 
     private void CompleteSitAtAssignedChair(Vector3 seatPosition)

@@ -64,6 +64,8 @@ public class EnvironmentDirtManager : MonoBehaviour
     [SerializeField] private GameObject[] ambientLitterVeryDirtyObjects;
 
     [Header("Spill-driven decorative trash (scripted path, no colliders)")]
+    [Tooltip("When disabled, spill-linked trash bag/cart visuals are skipped but clean sparkles still work.")]
+    [SerializeField] private bool enableSpillTrashDecor;
     [SerializeField] private bool spawnRuntimeDecorFromPrefabs = true;
     [Tooltip("Parent for sparkles etc.; defaults to grime_and_debris")]
     [SerializeField] private Transform decorSpawnParent;
@@ -179,9 +181,12 @@ public class EnvironmentDirtManager : MonoBehaviour
         if (spillTracker == null)
             spillTracker = FindFirstObjectByType<RestaurantSpillTracker>();
 
-        EnsureSpillTrashDecorRoot();
-        RebuildSpillTrashDecor();
-        _lastActiveSpillCount = CountActiveSpillsForDecor();
+        if (enableSpillTrashDecor)
+        {
+            EnsureSpillTrashDecorRoot();
+            RebuildSpillTrashDecor();
+            _lastActiveSpillCount = CountActiveSpillsForDecor();
+        }
 
         if (restaurantManager != null)
         {
@@ -210,11 +215,14 @@ public class EnvironmentDirtManager : MonoBehaviour
         if (spillTracker == null)
             spillTracker = FindFirstObjectByType<RestaurantSpillTracker>();
 
-        int activeSpills = CountActiveSpillsForDecor();
-        if (activeSpills != _lastActiveSpillCount)
+        if (enableSpillTrashDecor)
         {
-            _lastActiveSpillCount = activeSpills;
-            RebuildSpillTrashDecor();
+            int activeSpills = CountActiveSpillsForDecor();
+            if (activeSpills != _lastActiveSpillCount)
+            {
+                _lastActiveSpillCount = activeSpills;
+                RebuildSpillTrashDecor();
+            }
         }
 
         refreshTimer += Time.deltaTime;
@@ -388,7 +396,7 @@ public class EnvironmentDirtManager : MonoBehaviour
 
     private void RebuildSpillTrashDecor()
     {
-        if (!spawnRuntimeDecorFromPrefabs || _spillTrashDecorRoot == null)
+        if (!enableSpillTrashDecor || !spawnRuntimeDecorFromPrefabs || _spillTrashDecorRoot == null)
             return;
 
         for (int c = _spillTrashDecorRoot.childCount - 1; c >= 0; c--)

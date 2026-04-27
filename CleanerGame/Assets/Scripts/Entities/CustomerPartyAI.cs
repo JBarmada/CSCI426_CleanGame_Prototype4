@@ -234,7 +234,7 @@ public class CustomerPartyAI : MonoBehaviour
         MoveWithWallCheck(target, moveSpeed, isAngryCustomer: false);
 
         float distanceToSeat = GetPlanarDistance(transform.position, seatPosition);
-        if (distanceToSeat <= arrivalDistance || ShouldForceSit(distanceToSeat))
+        if (distanceToSeat <= arrivalDistance || ShouldForceSit(reservedChair, distanceToSeat))
         {
             CompleteSitAtReservedChair(seatPosition);
         }
@@ -263,9 +263,9 @@ public class CustomerPartyAI : MonoBehaviour
         return seatPosition;
     }
 
-    private bool ShouldForceSit(float distanceToSeat)
+    private bool ShouldForceSit(Chair chair, float distanceToSeat)
     {
-        if (distanceToSeat > blockedSitDistance)
+        if (!IsInSeatSnapZone(chair, distanceToSeat))
         {
             ResetBlockedSitTracking();
             return false;
@@ -279,6 +279,18 @@ public class CustomerPartyAI : MonoBehaviour
 
         lastWalkPosition = transform.position;
         return blockedSitTimer >= blockedSitSeconds;
+    }
+
+    private bool IsInSeatSnapZone(Chair chair, float distanceToSeat)
+    {
+        if (distanceToSeat <= blockedSitDistance)
+            return true;
+
+        if (!reachedSeatApproach || chair == null)
+            return false;
+
+        float distanceToApproach = GetPlanarDistance(transform.position, chair.GetApproachPosition());
+        return distanceToApproach <= blockedSitDistance;
     }
 
     private void CompleteSitAtReservedChair(Vector3 target)
