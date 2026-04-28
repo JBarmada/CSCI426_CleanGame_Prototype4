@@ -28,6 +28,9 @@ public class BroomPowerupSystem : MonoBehaviour
 
     public int UsesToday => usesToday;
     public int UsesLeftToday => Mathf.Max(0, maxUsesPerDay - usesToday);
+    public int MaxUsesPerDay => maxUsesPerDay;
+    public int TotalUses => totalUses;
+    public bool IsOwned => totalUses > 0;
 
     public float CurrentMultiplier
     {

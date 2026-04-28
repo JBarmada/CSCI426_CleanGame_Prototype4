@@ -59,7 +59,7 @@ Material:
     - _TessValue: 16
     - _Tile: 1
     m_Colors:
-    - _ColorTint: {r: 0.67779434, g: 0.9150943, b: 0.6517889, a: 1}
+    - _ColorTint: {r: 0.5882353, g: 0.58431375, b: 0.4627451, a: 1}
     - _EmissionColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
