@@ -361,6 +361,8 @@ MonoBehaviour:
   blockedSitDistance: 0.75
   blockedSitSeconds: 0.35
   shuffleSecondsRange: {x: 5, y: 5}
+  maxShuffleWaitSeconds: 5
+  failedShuffleRetrySeconds: 0.35
   disableCustomerComponent: 1
   emotions: {fileID: 0}
   angryRushMoveSpeedMultiplier: 2.4
