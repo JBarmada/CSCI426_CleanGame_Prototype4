@@ -1071,7 +1071,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 229}
+  m_AnchoredPosition: {x: 0, y: 390}
   m_SizeDelta: {x: 1278.1, y: 91.193}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &273753871
@@ -1092,10 +1092,10 @@ MonoBehaviour:
   rushText: Rush Hour
   afternoonText: Afternoon Slow Down
   closingText: Closing Time
-  morningColor: {r: 0.26254895, g: 0.6581276, b: 0.9433962, a: 1}
-  rushColor: {r: 0.6615939, g: 0.8490566, b: 0.6448024, a: 1}
-  afternoonColor: {r: 0.83913815, g: 0.6516999, b: 0.9528302, a: 1}
-  closingColor: {r: 0.9245283, g: 0.46535084, b: 0.42301533, a: 1}
+  morningColor: {r: 0.9056604, g: 0.8527338, b: 0.7817729, a: 1}
+  rushColor: {r: 0.7830189, g: 0.7507769, b: 0.6832948, a: 1}
+  afternoonColor: {r: 0.6603774, g: 0.49960744, b: 0.41429335, a: 1}
+  closingColor: {r: 0.4433962, g: 0.35390586, b: 0.24052154, a: 1}
   fadeInSeconds: 0.5
   holdSeconds: 1.5
   fadeOutSeconds: 0.75
@@ -1122,8 +1122,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: New Text
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 286665f3ce65d49edbdd8ec8251d518c, type: 2}
-  m_sharedMaterial: {fileID: -4651083933152557258, guid: 286665f3ce65d49edbdd8ec8251d518c, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 8e17de4f9bdfc4feb81c0626e99706ac, type: 2}
+  m_sharedMaterial: {fileID: 4688164955542848558, guid: 8e17de4f9bdfc4feb81c0626e99706ac, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -7617,7 +7617,7 @@ MonoBehaviour:
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_HighlightedColor: {r: 0.7169812, g: 0.6933073, b: 0.6933073, a: 1}
     m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
     m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
@@ -7652,7 +7652,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.9372549, g: 0.8039216, b: 0.6392157, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -13329,7 +13329,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -144.2}
+  m_AnchoredPosition: {x: 0, y: -160}
   m_SizeDelta: {x: 1597, y: 248.35602}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1645437256
@@ -13354,8 +13354,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: Overmopped
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 0161d805a3764c089bef00bfe00793f5, type: 2}
-  m_sharedMaterial: {fileID: 2147374, guid: 0161d805a3764c089bef00bfe00793f5, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: bbae6e88aa7484dd7855dfed7834dab2, type: 2}
+  m_sharedMaterial: {fileID: -8715377510822425319, guid: bbae6e88aa7484dd7855dfed7834dab2, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -13379,8 +13379,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 260.2
-  m_fontSizeBase: 260.2
+  m_fontSize: 142.6
+  m_fontSizeBase: 142.6
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -14933,7 +14933,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1868689917
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15057,7 +15057,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: -287.1}
-  m_SizeDelta: {x: 160, y: 30}
+  m_SizeDelta: {x: 160, y: 38.5}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1882707035
 MonoBehaviour:
@@ -15080,8 +15080,8 @@ MonoBehaviour:
     m_SelectOnRight: {fileID: 0}
   m_Transition: 1
   m_Colors:
-    m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_NormalColor: {r: 0.9339623, g: 0.802079, b: 0.63879496, a: 1}
+    m_HighlightedColor: {r: 0.7176471, g: 0.69411767, b: 0.69411767, a: 1}
     m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
     m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
