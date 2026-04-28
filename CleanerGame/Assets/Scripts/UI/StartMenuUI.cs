@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -11,6 +12,9 @@ public class StartMenuUI : MonoBehaviour
     [SerializeField] private Button tutorialButton;
     [SerializeField] private Button quitButton;
     [SerializeField] private GameFlowManager gameFlow;
+
+    private readonly List<CanvasGroup> gameplayHudGroups = new List<CanvasGroup>();
+    private bool gameplayHudResolved;
 
     private void Awake()
     {
@@ -34,6 +38,8 @@ public class StartMenuUI : MonoBehaviour
             gameFlow.PauseGame();
         else
             Time.timeScale = 0f;
+
+        SetGameplayHudVisible(false);
     }
 
     private void EnsureTutorialButton()
@@ -83,6 +89,7 @@ public class StartMenuUI : MonoBehaviour
     private void OnEnable()
     {
         ShowRoot();
+        SetGameplayHudVisible(false);
         if (gameFlow != null)
             gameFlow.PauseGame();
         else
@@ -94,6 +101,7 @@ public class StartMenuUI : MonoBehaviour
         TutorialMode.End();
         CoinWallet.Instance?.ResetForNewGame();
         HideRoot();
+        SetGameplayHudVisible(true);
         if (gameFlow != null)
             gameFlow.ResumeGame();
         else
@@ -107,6 +115,7 @@ public class StartMenuUI : MonoBehaviour
         ActivateAllInteractiveTutorials();
 
         HideRoot();
+        SetGameplayHudVisible(true);
         if (gameFlow != null)
             gameFlow.ResumeGame();
         else
@@ -167,5 +176,60 @@ public class StartMenuUI : MonoBehaviour
 
         if (root != null && root != gameObject)
             root.SetActive(false);
+    }
+
+    private void SetGameplayHudVisible(bool visible)
+    {
+        ResolveGameplayHud();
+
+        for (int i = 0; i < gameplayHudGroups.Count; i++)
+        {
+            CanvasGroup group = gameplayHudGroups[i];
+            if (group == null) continue;
+
+            group.alpha = visible ? 1f : 0f;
+            group.interactable = visible;
+            group.blocksRaycasts = visible;
+        }
+    }
+
+    private void ResolveGameplayHud()
+    {
+        if (gameplayHudResolved) return;
+        gameplayHudResolved = true;
+
+        CollectHudGroups<CoinHud>();
+        CollectHudGroups<ComboHud>();
+        CollectHudGroups<DayPhaseHud>();
+        CollectHudGroups<DirtinessHud>();
+        CollectHudGroups<ReputationHud>();
+        CollectHudGroups<StrikeHud>();
+        CollectHudGroups<PowerupButton>();
+        CollectHudGroups<SneakerPowerupButton>();
+    }
+
+    private void CollectHudGroups<T>() where T : Component
+    {
+        foreach (T hud in FindObjectsByType<T>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+        {
+            if (hud == null || IsStartMenuObject(hud.transform))
+                continue;
+
+            CanvasGroup group = hud.GetComponent<CanvasGroup>();
+            if (group == null)
+                group = hud.gameObject.AddComponent<CanvasGroup>();
+
+            if (!gameplayHudGroups.Contains(group))
+                gameplayHudGroups.Add(group);
+        }
+    }
+
+    private bool IsStartMenuObject(Transform candidate)
+    {
+        if (candidate == null || root == null)
+            return false;
+
+        Transform rootTransform = root.transform;
+        return candidate == rootTransform || candidate.IsChildOf(rootTransform);
     }
 }

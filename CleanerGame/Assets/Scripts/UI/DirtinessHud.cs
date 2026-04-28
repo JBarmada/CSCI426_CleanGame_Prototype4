@@ -12,6 +12,7 @@ public class DirtinessHud : MonoBehaviour
     [SerializeField] private bool enableScreenFilthTint = true;
     [Tooltip("Optional full-screen tint; if unset, a non-raycast Image is created on the parent Canvas")]
     [SerializeField] private Image screenFilthTint;
+    [SerializeField] private bool forceRuntimeScreenTint = true;
 
     [Header("Text")]
     [SerializeField] private string cleanText = "Clean";
@@ -25,13 +26,21 @@ public class DirtinessHud : MonoBehaviour
     [SerializeField] private Color veryDirtyColor = new Color(0.7f, 0.25f, 0.1f);
     [SerializeField] private Color filthyColor = new Color(0.9f, 0.1f, 0.1f);
 
-    [Header("Screen tint by tier (sickly green, darkens with filth)")]
-    [SerializeField] private Color screenTintColor = new Color(0.18f, 0.38f, 0.16f, 1f);
+    [Header("Screen tint by tier (clear when clean, greener with filth)")]
+    [SerializeField] private Color screenTintColor = new Color(0.06f, 0.62f, 0.08f, 1f);
     [SerializeField] private float screenTintAlphaClean;
-    [SerializeField] private float screenTintAlphaDirty = 0.12f;
-    [SerializeField] private float screenTintAlphaVeryDirty = 0.26f;
-    [SerializeField] private float screenTintAlphaFilthy = 0.48f;
+    [SerializeField] private float screenTintAlphaDirty = 0.18f;
+    [SerializeField] private float screenTintAlphaVeryDirty = 0.35f;
+    [SerializeField] private float screenTintAlphaFilthy = 0.55f;
     [SerializeField] private float screenTintFadeSpeed = 3f;
+    [SerializeField] private int screenTintSortingOrder = 1000;
+
+    [Header("Screen tint by spill count")]
+    [SerializeField] private bool useSpillCountForScreenTint = true;
+    [SerializeField] private int spillsPerGreenStep = 2;
+    [SerializeField] private float screenTintAlphaPerSpillStep = 0.12f;
+    [SerializeField] private float screenTintMaxAlphaFromSpills = 0.6f;
+    [SerializeField] private bool drawScreenTintWithOnGUI = true;
 
     [Header("Refresh")]
     [SerializeField] private float refreshSeconds = 0.25f;
@@ -62,6 +71,9 @@ public class DirtinessHud : MonoBehaviour
 
     private void Update()
     {
+        if (useSpillCountForScreenTint)
+            UpdateScreenTintFromSpillCount();
+
         if (screenFilthTint != null)
         {
             screenTintCurrentAlpha = Mathf.MoveTowards(
@@ -80,9 +92,41 @@ public class DirtinessHud : MonoBehaviour
         Refresh();
     }
 
+    private void OnGUI()
+    {
+        if (!drawScreenTintWithOnGUI || !enableScreenFilthTint || screenTintCurrentAlpha <= 0.001f)
+            return;
+
+        Color previousColor = GUI.color;
+        Color tint = screenTintColor;
+        tint.a = screenTintCurrentAlpha * screenTintColor.a;
+        GUI.color = tint;
+        GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), Texture2D.whiteTexture);
+        GUI.color = previousColor;
+    }
+
+    private void UpdateScreenTintFromSpillCount()
+    {
+        int spillsPerStep = Mathf.Max(1, spillsPerGreenStep);
+        int activeSpills = CountActiveSpills();
+        int greenSteps = activeSpills / spillsPerStep;
+        screenTintTargetAlpha = Mathf.Clamp(
+            greenSteps * Mathf.Max(0f, screenTintAlphaPerSpillStep),
+            screenTintAlphaClean,
+            Mathf.Max(screenTintAlphaClean, screenTintMaxAlphaFromSpills));
+    }
+
+    private int CountActiveSpills()
+    {
+        int activeSpills = SpillManager.ActiveSpills == null ? 0 : SpillManager.ActiveSpills.Count;
+        if (activeSpills > 0)
+            return activeSpills;
+
+        return FindObjectsByType<SpillManager>(FindObjectsSortMode.None).Length;
+    }
+
     private void Refresh()
     {
-        if (statusText == null) return;
         if (restaurantManager == null)
             restaurantManager = RestaurantManager.Instance;
         if (restaurantManager == null) return;
@@ -91,55 +135,71 @@ public class DirtinessHud : MonoBehaviour
         switch (level)
         {
             case RestaurantManager.DirtinessLevel.Clean:
-                statusText.text = cleanText;
-                statusText.color = cleanColor;
-                screenTintTargetAlpha = screenTintAlphaClean;
+                SetStatusText(cleanText, cleanColor);
+                SetTierScreenTintTarget(screenTintAlphaClean);
                 break;
             case RestaurantManager.DirtinessLevel.Dirty:
-                statusText.text = dirtyText;
-                statusText.color = dirtyColor;
-                screenTintTargetAlpha = screenTintAlphaDirty;
+                SetStatusText(dirtyText, dirtyColor);
+                SetTierScreenTintTarget(screenTintAlphaDirty);
                 break;
             case RestaurantManager.DirtinessLevel.VeryDirty:
-                statusText.text = veryDirtyText;
-                statusText.color = veryDirtyColor;
-                screenTintTargetAlpha = screenTintAlphaVeryDirty;
+                SetStatusText(veryDirtyText, veryDirtyColor);
+                SetTierScreenTintTarget(screenTintAlphaVeryDirty);
                 break;
             default:
-                statusText.text = filthyText;
-                statusText.color = filthyColor;
-                screenTintTargetAlpha = screenTintAlphaFilthy;
+                SetStatusText(filthyText, filthyColor);
+                SetTierScreenTintTarget(screenTintAlphaFilthy);
                 break;
         }
     }
 
+    private void SetTierScreenTintTarget(float targetAlpha)
+    {
+        if (!useSpillCountForScreenTint)
+            screenTintTargetAlpha = targetAlpha;
+    }
+
+    private void SetStatusText(string text, Color color)
+    {
+        if (statusText == null) return;
+
+        statusText.text = text;
+        statusText.color = color;
+    }
+
     private void EnsureScreenFilthTint()
     {
-        if (!enableScreenFilthTint || screenFilthTint != null)
+        if (!enableScreenFilthTint)
             return;
 
-        Canvas leafCanvas = GetComponentInParent<Canvas>();
-        if (leafCanvas == null)
+        if (screenFilthTint != null && !forceRuntimeScreenTint)
             return;
 
-        // Nest under the root canvas so anchors stretch the full viewport (not just a HUD sub-panel).
-        Canvas rootCanvas = leafCanvas.rootCanvas != null ? leafCanvas.rootCanvas : leafCanvas;
-        Transform rootTransform = rootCanvas.transform;
+        var go = new GameObject("ScreenFilthTintCanvas", typeof(RectTransform), typeof(Canvas));
+        go.layer = gameObject.layer;
+        var canvas = go.GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.overrideSorting = true;
+        canvas.sortingOrder = screenTintSortingOrder;
 
-        var go = new GameObject("ScreenFilthTint", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-        go.layer = rootCanvas.gameObject.layer;
         var rt = go.GetComponent<RectTransform>();
-        rt.SetParent(rootTransform, false);
-        rt.SetAsFirstSibling();
-        rt.anchorMin = Vector2.zero;
-        rt.anchorMax = Vector2.one;
-        rt.offsetMin = Vector2.zero;
-        rt.offsetMax = Vector2.zero;
-        rt.pivot = new Vector2(0.5f, 0.5f);
         rt.localScale = Vector3.one;
         rt.anchoredPosition3D = Vector3.zero;
 
-        var img = go.GetComponent<Image>();
+        var imageGo = new GameObject("ScreenFilthTint", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        imageGo.layer = gameObject.layer;
+        imageGo.transform.SetParent(go.transform, false);
+
+        var imageRt = imageGo.GetComponent<RectTransform>();
+        imageRt.anchorMin = Vector2.zero;
+        imageRt.anchorMax = Vector2.one;
+        imageRt.offsetMin = Vector2.zero;
+        imageRt.offsetMax = Vector2.zero;
+        imageRt.pivot = new Vector2(0.5f, 0.5f);
+        imageRt.localScale = Vector3.one;
+        imageRt.anchoredPosition3D = Vector3.zero;
+
+        var img = imageGo.GetComponent<Image>();
         img.sprite = null;
         img.type = Image.Type.Simple;
         img.color = new Color(screenTintColor.r, screenTintColor.g, screenTintColor.b, 0f);

@@ -15,7 +15,9 @@ public class CustomerPartyAI : MonoBehaviour
     [SerializeField] private float blockedSitSeconds = 0.35f;
 
     [Header("Shuffle Timing")]
-    [SerializeField] private Vector2 shuffleSecondsRange = new Vector2(8f, 8f);
+    [SerializeField] private Vector2 shuffleSecondsRange = new Vector2(3f, 5f);
+    [SerializeField] private float maxShuffleWaitSeconds = 5f;
+    [SerializeField] private float failedShuffleRetrySeconds = 0.35f;
 
     [Header("Setup")]
     [SerializeField] private bool disableCustomerComponent = true;
@@ -305,7 +307,7 @@ public class CustomerPartyAI : MonoBehaviour
             assignedChair = reservedChair;
             reservedChair = null;
             ResetSeatRoute();
-            shuffleTimer = Random.Range(shuffleSecondsRange.x, shuffleSecondsRange.y);
+            shuffleTimer = GetNextShuffleDelay();
             ResetBlockedSitTracking();
             state = PartyState.Sitting;
             if (emotions != null)
@@ -384,7 +386,7 @@ public class CustomerPartyAI : MonoBehaviour
             if (manager == null || !manager.TryAssignChair(this, previousChair))
             {
                 if (manager == null || !manager.TryStartPartySeatSwap(this, previousChair))
-                    shuffleTimer = 1f;
+                    shuffleTimer = Mathf.Max(0.1f, failedShuffleRetrySeconds);
                 return;
             }
 
@@ -397,6 +399,7 @@ public class CustomerPartyAI : MonoBehaviour
             previousChair.CustomerLeft();
             assignedChair = null;
             ResetSeatRoute();
+            shuffleTimer = GetNextShuffleDelay();
             return;
         }
 
@@ -445,6 +448,14 @@ public class CustomerPartyAI : MonoBehaviour
 
         state = PartyState.AngryRush;
         SetTintGradient(1f);   // snap to full red
+    }
+
+    private float GetNextShuffleDelay()
+    {
+        float min = Mathf.Max(0.1f, Mathf.Min(shuffleSecondsRange.x, shuffleSecondsRange.y));
+        float max = Mathf.Max(min, Mathf.Max(shuffleSecondsRange.x, shuffleSecondsRange.y));
+        max = Mathf.Min(max, Mathf.Max(min, maxShuffleWaitSeconds));
+        return Random.Range(min, max);
     }
 
     private void SetTintGradient(float t)

@@ -39,9 +39,9 @@ public class EnvironmentDirtManager : MonoBehaviour
     [SerializeField] private bool useRoomSparkleParticles = true;
     [SerializeField] private Vector3 sparkleVolumeCenterLocal = new Vector3(0f, 1.15f, 0f);
     [SerializeField] private Vector3 sparkleVolumeHalfExtents = new Vector3(10f, 2.5f, 9f);
-    [SerializeField] private float sparkleEmissionRate = 55f;
-    [SerializeField] private float sparkleParticleSize = 0.09f;
-    [SerializeField] private float sparkleLifetime = 1.8f;
+    [SerializeField] private float sparkleEmissionRate = 120f;
+    [SerializeField] private float sparkleParticleSize = 0.18f;
+    [SerializeField] private float sparkleLifetime = 2.2f;
     [Tooltip("Optional extra prefab instances (e.g. CFXR); scattered in the sparkle volume when count > 0")]
     [SerializeField] private GameObject cleanSparklePrefab;
     [SerializeField] private int cleanSparklePrefabCount;
@@ -66,6 +66,8 @@ public class EnvironmentDirtManager : MonoBehaviour
     [Header("Spill-driven decorative trash (scripted path, no colliders)")]
     [Tooltip("When disabled, spill-linked trash bag/cart visuals are skipped but clean sparkles still work.")]
     [SerializeField] private bool enableSpillTrashDecor;
+    [Tooltip("Hides the spill-linked trash bag/cart visuals even if older scene data has them enabled.")]
+    [SerializeField] private bool suppressSpillTrashDecor = true;
     [SerializeField] private bool spawnRuntimeDecorFromPrefabs = true;
     [Tooltip("Parent for sparkles etc.; defaults to grime_and_debris")]
     [SerializeField] private Transform decorSpawnParent;
@@ -138,6 +140,7 @@ public class EnvironmentDirtManager : MonoBehaviour
 
     private ParticleSystem _cleanRoomSparkles;
     private Transform _cleanFxRoot;
+    private static Mesh s_fourPointStarMesh;
 
     private GameObject[] _combinedClean;
     private GameObject[] _combinedAmbientDirty;
@@ -181,7 +184,10 @@ public class EnvironmentDirtManager : MonoBehaviour
         if (spillTracker == null)
             spillTracker = FindFirstObjectByType<RestaurantSpillTracker>();
 
-        if (enableSpillTrashDecor)
+        if (suppressSpillTrashDecor)
+            ClearSpillTrashDecor();
+
+        if (enableSpillTrashDecor && !suppressSpillTrashDecor)
         {
             EnsureSpillTrashDecorRoot();
             RebuildSpillTrashDecor();
@@ -215,7 +221,7 @@ public class EnvironmentDirtManager : MonoBehaviour
         if (spillTracker == null)
             spillTracker = FindFirstObjectByType<RestaurantSpillTracker>();
 
-        if (enableSpillTrashDecor)
+        if (enableSpillTrashDecor && !suppressSpillTrashDecor)
         {
             int activeSpills = CountActiveSpillsForDecor();
             if (activeSpills != _lastActiveSpillCount)
@@ -306,7 +312,7 @@ public class EnvironmentDirtManager : MonoBehaviour
                 new Color(1f, 1f, 1f, 0.55f),
                 new Color(1f, 1f, 1f, 0.95f));
             main.simulationSpace = ParticleSystemSimulationSpace.Local;
-            main.maxParticles = 600;
+            main.maxParticles = 1000;
 
             var emission = _cleanRoomSparkles.emission;
             emission.rateOverTime = sparkleEmissionRate;
@@ -326,7 +332,8 @@ public class EnvironmentDirtManager : MonoBehaviour
             sol.size = new ParticleSystem.MinMaxCurve(1f, sizeCurve);
 
             var renderer = _cleanRoomSparkles.GetComponent<ParticleSystemRenderer>();
-            renderer.renderMode = ParticleSystemRenderMode.Billboard;
+            renderer.renderMode = ParticleSystemRenderMode.Mesh;
+            renderer.mesh = GetFourPointStarMesh();
             ConfigureSparkleRendererForSoftGlow(renderer);
 
             _cleanRoomSparkles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
@@ -376,6 +383,26 @@ public class EnvironmentDirtManager : MonoBehaviour
         _spillTrashDecorRoot.localPosition = Vector3.zero;
         _spillTrashDecorRoot.localRotation = Quaternion.identity;
         _spillTrashDecorRoot.localScale = Vector3.one;
+    }
+
+    private void ClearSpillTrashDecor()
+    {
+        enableSpillTrashDecor = false;
+
+        if (_spillTrashDecorRoot == null)
+        {
+            GameObject existing = GameObject.Find("Runtime_SpillTrashDecor");
+            if (existing != null)
+                _spillTrashDecorRoot = existing.transform;
+        }
+
+        if (_spillTrashDecorRoot == null)
+            return;
+
+        for (int c = _spillTrashDecorRoot.childCount - 1; c >= 0; c--)
+            Destroy(_spillTrashDecorRoot.GetChild(c).gameObject);
+
+        _spillTrashDecorRoot.gameObject.SetActive(false);
     }
 
     private readonly struct SpillDecorSpawn
@@ -797,5 +824,38 @@ public class EnvironmentDirtManager : MonoBehaviour
             mat.SetColor("_TintColor", Color.white);
 
         renderer.material = mat;
+    }
+
+    private static Mesh GetFourPointStarMesh()
+    {
+        if (s_fourPointStarMesh != null)
+            return s_fourPointStarMesh;
+
+        s_fourPointStarMesh = new Mesh { name = "Runtime_CleanFourPointStarMesh" };
+        s_fourPointStarMesh.vertices = new[]
+        {
+            new Vector3(0f, 1f, 0f),
+            new Vector3(0.18f, 0.18f, 0f),
+            new Vector3(1f, 0f, 0f),
+            new Vector3(0.18f, -0.18f, 0f),
+            new Vector3(0f, -1f, 0f),
+            new Vector3(-0.18f, -0.18f, 0f),
+            new Vector3(-1f, 0f, 0f),
+            new Vector3(-0.18f, 0.18f, 0f),
+            Vector3.zero
+        };
+        s_fourPointStarMesh.triangles = new[]
+        {
+            8, 0, 1,
+            8, 1, 2,
+            8, 2, 3,
+            8, 3, 4,
+            8, 4, 5,
+            8, 5, 6,
+            8, 6, 7,
+            8, 7, 0
+        };
+        s_fourPointStarMesh.RecalculateBounds();
+        return s_fourPointStarMesh;
     }
 }
