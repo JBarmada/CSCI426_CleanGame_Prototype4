@@ -23,6 +23,11 @@ public class DayEndSummaryUI : MonoBehaviour
     [SerializeField] private Image reputationStar;
     [SerializeField] private Button continueButton;
 
+    [Header("Gameplay HUD")]
+    [SerializeField] private GameObject coinHudRoot;
+    [SerializeField] private GameObject powerupHudRoot;
+    [SerializeField] private GameObject reputationHudRoot;
+
     [Header("Promotion End Screens")]
     [SerializeField] private GameObject promotionScreen;   // assign Promotion Panel (inactive by default)
     [SerializeField] private GameObject firedScreen;       // assign Fired Panel (inactive by default)
@@ -105,6 +110,10 @@ public class DayEndSummaryUI : MonoBehaviour
 
     private bool waitingForPromotionDecision = false;
     private bool legacyReputationStarVisibleState = true;
+    private bool gameplayHudVisibilityCaptured;
+    private bool coinHudWasActive;
+    private bool powerupHudWasActive;
+    private bool reputationHudWasActive;
 
     private RectLayoutState promotionStarsLayoutState;
     private bool promotionStarsLayoutCaptured;
@@ -334,6 +343,10 @@ public class DayEndSummaryUI : MonoBehaviour
         HideRoot();
         Time.timeScale = 0f;
 
+        // Final result: hide active gameplay HUD so only the result UI shows
+        ResolveGameplayHudRoots();
+        HideGameplayHud();
+
         ShowPanel(promotionScreen, promotionCanvasGroup);
         PlayEndScreenAudio(promotionScreenClip);
         StartResultImageReveal(promotionResultImage);
@@ -377,6 +390,10 @@ public class DayEndSummaryUI : MonoBehaviour
 
         HideRoot();
         Time.timeScale = 0f;
+
+        // Final result: hide active gameplay HUD so only the result UI shows
+        ResolveGameplayHudRoots();
+        HideGameplayHud();
 
         ShowPanel(firedScreen, firedCanvasGroup);
         PlayEndScreenAudio(loseScreenClip);
@@ -605,6 +622,65 @@ public class DayEndSummaryUI : MonoBehaviour
 
         if (panel != null)
             panel.SetActive(false);
+    }
+
+    private void ResolveGameplayHudRoots()
+    {
+        if (coinHudRoot == null)
+        {
+            CoinHud coinHud = FindFirstObjectByType<CoinHud>();
+            if (coinHud != null)
+                coinHudRoot = coinHud.gameObject;
+        }
+
+        if (powerupHudRoot == null)
+        {
+            PowerupButton[] powerupButtons = FindObjectsByType<PowerupButton>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            if (powerupButtons != null && powerupButtons.Length > 0 && powerupButtons[0] != null)
+            {
+                Transform parent = powerupButtons[0].transform.parent;
+                powerupHudRoot = parent != null ? parent.gameObject : powerupButtons[0].gameObject;
+            }
+        }
+
+        if (reputationHudRoot == null)
+        {
+            ReputationHud reputationHud = FindFirstObjectByType<ReputationHud>();
+            if (reputationHud != null)
+                reputationHudRoot = reputationHud.gameObject;
+        }
+    }
+
+    private void HideGameplayHud()
+    {
+        if (!gameplayHudVisibilityCaptured)
+        {
+            coinHudWasActive = coinHudRoot != null && coinHudRoot.activeSelf;
+            powerupHudWasActive = powerupHudRoot != null && powerupHudRoot.activeSelf;
+            reputationHudWasActive = reputationHudRoot != null && reputationHudRoot.activeSelf;
+            gameplayHudVisibilityCaptured = true;
+        }
+
+        SetGameObjectVisible(coinHudRoot, false);
+        SetGameObjectVisible(powerupHudRoot, false);
+        SetGameObjectVisible(reputationHudRoot, false);
+    }
+
+    private void ShowGameplayHud()
+    {
+        if (!gameplayHudVisibilityCaptured)
+            return;
+
+        SetGameObjectVisible(coinHudRoot, coinHudWasActive);
+        SetGameObjectVisible(powerupHudRoot, powerupHudWasActive);
+        SetGameObjectVisible(reputationHudRoot, reputationHudWasActive);
+        gameplayHudVisibilityCaptured = false;
+    }
+
+    private void SetGameObjectVisible(GameObject target, bool visible)
+    {
+        if (target != null)
+            target.SetActive(visible);
     }
 
     private void RefreshPromotionStars()
