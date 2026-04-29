@@ -823,6 +823,16 @@ public class EnvironmentDirtManager : MonoBehaviour
         else if (mat.HasProperty("_TintColor"))
             mat.SetColor("_TintColor", Color.white);
 
+        if (mat.HasProperty("_Surface"))
+            mat.SetFloat("_Surface", 1f);
+        if (mat.HasProperty("_Blend"))
+            mat.SetFloat("_Blend", 0f);
+        mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        mat.SetInt("_ZWrite", 0);
+        mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+        mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+
         renderer.material = mat;
     }
 

@@ -33,7 +33,10 @@ public class DayEndSummaryUI : MonoBehaviour
     [SerializeField] private GameObject firedScreen;       // assign Fired Panel (inactive by default)
     [SerializeField] private CanvasGroup promotionCanvasGroup;
     [SerializeField] private CanvasGroup firedCanvasGroup;
+    [SerializeField] private Button promotionRetryButton;
+    [SerializeField] private Button promotionQuitButton;
     [SerializeField] private Button firedRetryButton;
+    [SerializeField] private Button firedQuitButton;
     [SerializeField] private GameObject promotionResultImage;
     [SerializeField] private GameObject firedResultImage;
     [SerializeField] private float resultImageRevealDelaySeconds = 3f;
@@ -159,10 +162,23 @@ public class DayEndSummaryUI : MonoBehaviour
         if (continueButton != null)
             continueButton.onClick.AddListener(OnContinuePressed);
 
+        if (promotionRetryButton == null)
+            promotionRetryButton = TryFindButton(promotionScreen, "retry", "restart", "try", "newgame", "new_game");
+        if (promotionQuitButton == null)
+            promotionQuitButton = TryFindButton(promotionScreen, "quit", "exit");
         if (firedRetryButton == null)
-            firedRetryButton = TryFindRetryButton(firedScreen);
+            firedRetryButton = TryFindButton(firedScreen, "retry", "restart", "try", "newgame", "new_game");
+        if (firedQuitButton == null)
+            firedQuitButton = TryFindButton(firedScreen, "quit", "exit");
+
+        if (promotionRetryButton != null)
+            promotionRetryButton.onClick.AddListener(OnEndScreenRetryPressed);
+        if (promotionQuitButton != null)
+            promotionQuitButton.onClick.AddListener(OnEndScreenQuitPressed);
         if (firedRetryButton != null)
-            firedRetryButton.onClick.AddListener(OnFiredRetryPressed);
+            firedRetryButton.onClick.AddListener(OnEndScreenRetryPressed);
+        if (firedQuitButton != null)
+            firedQuitButton.onClick.AddListener(OnEndScreenQuitPressed);
 
 
         EnsureEndScreenAudioSource();
@@ -1095,7 +1111,7 @@ public class DayEndSummaryUI : MonoBehaviour
         reputationStar.gameObject.SetActive(legacyReputationStarVisibleState);
     }
 
-    public void OnFiredRetryPressed()
+    public void OnEndScreenRetryPressed()
     {
         if (gameFlow == null)
             gameFlow = GameFlowManager.Instance;
@@ -1114,7 +1130,21 @@ public class DayEndSummaryUI : MonoBehaviour
         SceneManager.LoadScene(active.buildIndex);
     }
 
-    private Button TryFindRetryButton(GameObject panelRoot)
+    public void OnEndScreenQuitPressed()
+    {
+        if (gameFlow == null)
+            gameFlow = GameFlowManager.Instance;
+
+        if (gameFlow != null)
+        {
+            gameFlow.QuitGame();
+            return;
+        }
+
+        Application.Quit();
+    }
+
+    private Button TryFindButton(GameObject panelRoot, params string[] nameKeywords)
     {
         if (panelRoot == null)
             return null;
@@ -1127,8 +1157,12 @@ public class DayEndSummaryUI : MonoBehaviour
                 continue;
 
             string n = candidate.name.ToLowerInvariant();
-            if (n.Contains("retry") || n.Contains("restart") || n.Contains("newgame") || n.Contains("new_game"))
-                return candidate;
+            for (int keywordIndex = 0; keywordIndex < nameKeywords.Length; keywordIndex++)
+            {
+                string keyword = nameKeywords[keywordIndex];
+                if (!string.IsNullOrEmpty(keyword) && n.Contains(keyword))
+                    return candidate;
+            }
         }
 
         return null;
