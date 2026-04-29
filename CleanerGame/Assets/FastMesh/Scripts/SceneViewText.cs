@@ -1,5 +1,6 @@
-using UnityEngine;
+#if UNITY_EDITOR
 using UnityEditor;
+using UnityEngine;
 
 namespace FastMesh_Example
 {
@@ -54,5 +55,6 @@ namespace FastMesh_Example
         }
     }
 }
+#endif
 
 
