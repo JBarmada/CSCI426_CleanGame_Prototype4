@@ -162,6 +162,31 @@ public class DayEndSummaryUI : MonoBehaviour
         if (continueButton != null)
             continueButton.onClick.AddListener(OnContinuePressed);
 
+        // If panels are not assigned in the inspector, try to locate them by name (under root first, then globally)
+        if (promotionScreen == null)
+        {
+            if (root != null)
+                promotionScreen = FindChildByKeywords(root.transform, "promot", "promotion", "promote");
+            if (promotionScreen == null)
+                promotionScreen = FindGameObjectInSceneByKeywords("promot", "promotion", "promote");
+        }
+        else
+        {
+            Debug.Log($"[DayEndSummaryUI] promotionScreen assigned in inspector: {promotionScreen.name}");
+        }
+
+        if (firedScreen == null)
+        {
+            if (root != null)
+                firedScreen = FindChildByKeywords(root.transform, "fired", "fire");
+            if (firedScreen == null)
+                firedScreen = FindGameObjectInSceneByKeywords("fired", "fire");
+        }
+        else
+        {
+            Debug.Log($"[DayEndSummaryUI] firedScreen assigned in inspector: {firedScreen.name}");
+        }
+
         if (promotionRetryButton == null)
             promotionRetryButton = TryFindButton(promotionScreen, "retry", "restart", "try", "newgame", "new_game");
         if (promotionQuitButton == null)
@@ -171,14 +196,56 @@ public class DayEndSummaryUI : MonoBehaviour
         if (firedQuitButton == null)
             firedQuitButton = TryFindButton(firedScreen, "quit", "exit");
 
+        // Fallback: if not found by name, get first and second button from each panel
+        if (promotionRetryButton == null && promotionScreen != null)
+        {
+            Button[] btns = promotionScreen.GetComponentsInChildren<Button>(true);
+            if (btns.Length > 0)
+                promotionRetryButton = btns[0];
+        }
+        if (promotionQuitButton == null && promotionScreen != null)
+        {
+            Button[] btns = promotionScreen.GetComponentsInChildren<Button>(true);
+            if (btns.Length > 1)
+                promotionQuitButton = btns[1];
+        }
+        if (firedRetryButton == null && firedScreen != null)
+        {
+            Button[] btns = firedScreen.GetComponentsInChildren<Button>(true);
+            if (btns.Length > 0)
+                firedRetryButton = btns[0];
+        }
+        if (firedQuitButton == null && firedScreen != null)
+        {
+            Button[] btns = firedScreen.GetComponentsInChildren<Button>(true);
+            if (btns.Length > 1)
+                firedQuitButton = btns[1];
+        }
+
         if (promotionRetryButton != null)
+        {
+            promotionRetryButton.onClick.RemoveListener(OnEndScreenRetryPressed);
             promotionRetryButton.onClick.AddListener(OnEndScreenRetryPressed);
+            Debug.Log($"[DayEndSummaryUI] Bound promotionRetryButton: {promotionRetryButton.name}");
+        }
         if (promotionQuitButton != null)
+        {
+            promotionQuitButton.onClick.RemoveListener(OnEndScreenQuitPressed);
             promotionQuitButton.onClick.AddListener(OnEndScreenQuitPressed);
+            Debug.Log($"[DayEndSummaryUI] Bound promotionQuitButton: {promotionQuitButton.name}");
+        }
         if (firedRetryButton != null)
+        {
+            firedRetryButton.onClick.RemoveListener(OnEndScreenRetryPressed);
             firedRetryButton.onClick.AddListener(OnEndScreenRetryPressed);
+            Debug.Log($"[DayEndSummaryUI] Bound firedRetryButton: {firedRetryButton.name}");
+        }
         if (firedQuitButton != null)
+        {
+            firedQuitButton.onClick.RemoveListener(OnEndScreenQuitPressed);
             firedQuitButton.onClick.AddListener(OnEndScreenQuitPressed);
+            Debug.Log($"[DayEndSummaryUI] Bound firedQuitButton: {firedQuitButton.name}");
+        }
 
 
         EnsureEndScreenAudioSource();
@@ -1113,6 +1180,7 @@ public class DayEndSummaryUI : MonoBehaviour
 
     public void OnEndScreenRetryPressed()
     {
+        Debug.Log("[DayEndSummaryUI] OnEndScreenRetryPressed invoked");
         if (gameFlow == null)
             gameFlow = GameFlowManager.Instance;
 
@@ -1132,6 +1200,7 @@ public class DayEndSummaryUI : MonoBehaviour
 
     public void OnEndScreenQuitPressed()
     {
+        Debug.Log("[DayEndSummaryUI] OnEndScreenQuitPressed invoked");
         if (gameFlow == null)
             gameFlow = GameFlowManager.Instance;
 
@@ -1165,6 +1234,39 @@ public class DayEndSummaryUI : MonoBehaviour
             }
         }
 
+        return null;
+    }
+
+    private GameObject FindChildByKeywords(Transform rootTransform, params string[] keywords)
+    {
+        if (rootTransform == null) return null;
+        Transform[] all = rootTransform.GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < all.Length; i++)
+        {
+            string n = all[i].name.ToLowerInvariant();
+            for (int k = 0; k < keywords.Length; k++)
+            {
+                string kw = keywords[k];
+                if (!string.IsNullOrEmpty(kw) && n.Contains(kw))
+                    return all[i].gameObject;
+            }
+        }
+        return null;
+    }
+
+    private GameObject FindGameObjectInSceneByKeywords(params string[] keywords)
+    {
+        Transform[] all = FindObjectsOfType<Transform>(true);
+        for (int i = 0; i < all.Length; i++)
+        {
+            string n = all[i].name.ToLowerInvariant();
+            for (int k = 0; k < keywords.Length; k++)
+            {
+                string kw = keywords[k];
+                if (!string.IsNullOrEmpty(kw) && n.Contains(kw))
+                    return all[i].gameObject;
+            }
+        }
         return null;
     }
 

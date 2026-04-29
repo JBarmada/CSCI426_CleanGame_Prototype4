@@ -34,8 +34,7 @@ public class PowerupButton : MonoBehaviour
     [SerializeField] private string readyStateLabel = "READY";
     [SerializeField] private string needCoinsStateLabel = "NEED COINS";
     [SerializeField] private string maxedStateLabel = "MAXED";
-    [SerializeField] private string ownedStateLabel = "OWNED";
-    [SerializeField] private string ownedMultiplierFormat = "x{0:F2}";
+    [SerializeField] private string ownedMultiplierFormat = "{0:F2}x";
 
     [Header("Audio")]
     [SerializeField] private AudioSource audioSource;
@@ -148,7 +147,7 @@ public class PowerupButton : MonoBehaviour
         if (stateText != null)
         {
             stateText.text = isOwned
-                ? ownedStateLabel + " " + string.Format(ownedMultiplierFormat, broomSystem.CurrentMultiplier)
+                ? string.Format(ownedMultiplierFormat, broomSystem.CurrentMultiplier)
                 : (isAvailableNow ? readyStateLabel : (hasUses ? needCoinsStateLabel : maxedStateLabel));
             stateText.color = isOwned ? ownedText : (isAvailableNow ? readyText : lockedText);
         }

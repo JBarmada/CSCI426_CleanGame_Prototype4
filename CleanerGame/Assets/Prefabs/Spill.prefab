@@ -145,9 +145,17 @@ MonoBehaviour:
   destroyRoot: 0
   pulseSpeed: 2
   pulseMinAlpha: 0.3
-  spillParticles: {fileID: 8829695151584423245}
+  spillParticles: {fileID: 0}
+  enhanceDirtyParticles: 1
+  suppressDirtyParticlesForWaterSpills: 1
+  dirtyParticleHeight: 0.45
+  dirtyParticleEmissionRate: 85
+  dirtyParticleSize: 0.24
   cleanBurstPrefab: {fileID: 141433446842962269, guid: 9fe8f8b3288e45a44af36ff8aa04486e, type: 3}
   cleanBurstLifetime: 1
+  spawnCleanStarBurst: 1
+  cleanStarBurstCount: 22
+  cleanStarBurstSize: 0.32
   cleanCompleteClip: {fileID: 8300000, guid: fd6236556ff2ad640b9e29c09a08b787, type: 3}
   cleanCompleteVolume: 0.8
   cleanPunchScale: 1.35
@@ -260,7 +268,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &7636285724777772452
 Transform:
   m_ObjectHideFlags: 0

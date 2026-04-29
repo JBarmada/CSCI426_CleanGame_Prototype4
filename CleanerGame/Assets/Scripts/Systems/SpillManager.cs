@@ -61,6 +61,7 @@ public class SpillManager : MonoBehaviour
 
     [Header("Particles")]
     [SerializeField] private ParticleSystem spillParticles;
+    [SerializeField] private bool hideSpillParticles = true;
     [SerializeField] private bool enhanceDirtyParticles = true;
     [SerializeField] private bool suppressDirtyParticlesForWaterSpills = true;
     [SerializeField] private float dirtyParticleHeight = 0.45f;
@@ -110,7 +111,12 @@ public class SpillManager : MonoBehaviour
 
         if (spillParticles == null)
             spillParticles = GetComponentInChildren<ParticleSystem>();
-        if (enhanceDirtyParticles && !ShouldSkipDirtyParticles())
+        if (hideSpillParticles && spillParticles != null)
+        {
+            spillParticles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            spillParticles.gameObject.SetActive(false);
+        }
+        if (enhanceDirtyParticles && !hideSpillParticles && !ShouldSkipDirtyParticles())
             EnsureEnhancedDirtyParticles();
 
         if (dayCycle == null)
@@ -145,7 +151,8 @@ public class SpillManager : MonoBehaviour
             // Stop particles as soon as cleaning begins
             if (!particlesStopped && spillParticles != null)
             {
-                spillParticles.Stop();
+                if (!hideSpillParticles)
+                    spillParticles.Stop();
                 particlesStopped = true;
             }
 
@@ -319,6 +326,9 @@ public class SpillManager : MonoBehaviour
     {
         if (spillParticles == null)
         {
+            if (hideSpillParticles)
+                return;
+
             GameObject particleObject = new GameObject("Runtime_DirtySpillParticles");
             particleObject.transform.SetParent(transform, false);
             particleObject.transform.localPosition = Vector3.up * dirtyParticleHeight;
@@ -326,6 +336,13 @@ public class SpillManager : MonoBehaviour
         }
         else
         {
+            if (hideSpillParticles)
+            {
+                spillParticles.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                spillParticles.gameObject.SetActive(false);
+                return;
+            }
+
             Vector3 localPosition = spillParticles.transform.localPosition;
             localPosition.y = Mathf.Max(localPosition.y, dirtyParticleHeight);
             spillParticles.transform.localPosition = localPosition;

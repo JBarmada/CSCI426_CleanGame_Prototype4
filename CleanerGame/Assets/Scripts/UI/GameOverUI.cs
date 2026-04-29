@@ -33,10 +33,32 @@ public class GameOverUI : MonoBehaviour
 
         UISortingUtility.EnsureSorting(root != null ? root : gameObject, sortingOrder, true);
 
+        // Auto-find buttons if not assigned
+        if (newGameButton == null)
+            newGameButton = root != null ? root.GetComponentInChildren<Button>() : GetComponentInChildren<Button>();
+        if (quitButton == null && newGameButton != null)
+        {
+            Button[] allButtons = root != null ? root.GetComponentsInChildren<Button>() : GetComponentsInChildren<Button>();
+            for (int i = 0; i < allButtons.Length; i++)
+            {
+                if (allButtons[i] != newGameButton)
+                {
+                    quitButton = allButtons[i];
+                    break;
+                }
+            }
+        }
+
         if (newGameButton != null)
+        {
+            newGameButton.onClick.RemoveListener(OnNewGamePressed);
             newGameButton.onClick.AddListener(OnNewGamePressed);
+        }
         if (quitButton != null)
+        {
+            quitButton.onClick.RemoveListener(OnQuitPressed);
             quitButton.onClick.AddListener(OnQuitPressed);
+        }
 
         EnsureLoseAudioSource();
     }
